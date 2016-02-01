@@ -1,4 +1,4 @@
-package com.github.davidmoten.rtree3d;
+package com.github.davidmoten.util;
 
 public final class Pair<T> {
 
