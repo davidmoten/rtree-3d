@@ -25,6 +25,10 @@ public final class Box implements Geometry {
     public float minY() {
         return minY;
     }
+    
+    public float minZ() {
+        return minZ;
+    }
 
     public float maxX() {
         return maxX;
@@ -65,5 +69,6 @@ public final class Box implements Geometry {
         // TODO Auto-generated method stub
         return 0;
     }
+
 
 }
