@@ -1,10 +1,15 @@
 package com.github.davidmoten.rtree3d;
 
+import com.google.common.base.Preconditions;
+
 public final class Box implements Geometry {
 
     private final float minX, minY, minZ, maxX, maxY, maxZ;
 
     private Box(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        Preconditions.checkArgument(minX <= maxX);
+        Preconditions.checkArgument(minY <= maxY);
+        Preconditions.checkArgument(minZ <= maxZ);
         this.minX = minX;
         this.minY = minY;
         this.minZ = minZ;
@@ -55,8 +60,20 @@ public final class Box implements Geometry {
 
     @Override
     public boolean intersects(Box r) {
-        // TODO Auto-generated method stub
-        return false;
+        float xMaxMin = Math.max(minX(), r.minX());
+        float xMinMax = Math.min(maxX(), r.maxX());
+        if (xMinMax<xMaxMin) 
+            return false;
+        else {
+            float yMaxMin = Math.max(minY(), r.minY());
+            float yMinMax = Math.min(maxY(), r.maxY());
+            if( yMinMax>=yMaxMin) {
+                float zMaxMin = Math.max(minY(), r.minY());
+                float zMinMax = Math.min(maxY(), r.maxY());
+                return zMinMax >= zMaxMin;
+            }
+            else return false;
+        }
     }
 
     public float volume() {
