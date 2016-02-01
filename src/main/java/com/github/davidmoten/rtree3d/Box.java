@@ -70,5 +70,10 @@ public final class Box implements Geometry {
         return 0;
     }
 
+    public Box add(Box b) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 
 }
