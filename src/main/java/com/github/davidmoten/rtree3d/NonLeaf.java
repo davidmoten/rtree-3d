@@ -56,7 +56,7 @@ final class NonLeaf<T, S extends Geometry> implements Node<T, S> {
 
     @Override
     public List<Node<T, S>> add(Entry<? extends T, ? extends S> entry) {
-        final Node<T, S> child = context.selector().select(entry.geometry().mbr(), children);
+        final Node<T, S> child = context.selector().select(entry.geometry().mbb(), children);
         List<Node<T, S>> list = child.add(entry);
         List<? extends Node<T, S>> children2 = Util.replace(children, child, list);
         if (children2.size() <= context.maxChildren())
@@ -91,7 +91,7 @@ final class NonLeaf<T, S extends Geometry> implements Node<T, S> {
         int countDeleted = 0;
 
         for (final Node<T, S> child : children) {
-            if (entry.geometry().intersects(child.geometry().mbr())) {
+            if (entry.geometry().intersects(child.geometry().mbb())) {
                 final NodeAndEntries<T, S> result = child.delete(entry, all);
                 if (result.node().isPresent()) {
                     if (result.node().get() != child) {

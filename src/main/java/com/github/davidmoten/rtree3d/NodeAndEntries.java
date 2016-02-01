@@ -2,7 +2,6 @@ package com.github.davidmoten.rtree3d;
 
 import java.util.List;
 
-import com.github.davidmoten.rtree.geometry.Geometry;
 import com.google.common.base.Optional;
 
 /**

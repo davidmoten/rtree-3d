@@ -20,7 +20,7 @@ public final class ListPair<T extends HasGeometry> {
     public ListPair(List<T> list1, List<T> list2) {
         this.group1 = new Group<T>(list1);
         this.group2 = new Group<T>(list2);
-        this.marginSum = group1.geometry().mbr().perimeter() + group2.geometry().mbr().perimeter();
+        this.marginSum = group1.geometry().mbb().surfaceArea() + group2.geometry().mbb().surfaceArea();
     }
 
     public Group<T> group1() {
@@ -31,9 +31,9 @@ public final class ListPair<T extends HasGeometry> {
         return group2;
     }
 
-    public float areaSum() {
+    public float volumeSum() {
         if (areaSum == null)
-            areaSum = group1.geometry().mbr().area() + group2.geometry().mbr().area();
+            areaSum = group1.geometry().mbb().volume() + group2.geometry().mbb().volume();
         return areaSum;
     }
 

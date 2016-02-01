@@ -9,13 +9,19 @@ public class Util {
         return null;
     }
 
-    public static List<Entry<T, S>> add(List<Entry<T, S>> entries, Entry<T, S> entry) {
+    public static <T, S extends Geometry> List<Entry<T, S>> add(List<Entry<T, S>> entries, Entry<T, S> entry) {
         // TODO Auto-generated method stub
         return null;
     }
 
-    public static List<? extends Node<T, S>> replace(List<? extends Node<T, S>> children,
+    public static <T,S extends Geometry> List<? extends Node<T, S>> replace(List<? extends Node<T, S>> children,
             Node<T, S> child, List<Node<T, S>> list) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public static <T, S extends Geometry> List<Node<T, S>> remove(List<? extends Node<T, S>> children,
+            List<Node<T, S>> removeTheseNodes) {
         // TODO Auto-generated method stub
         return null;
     }

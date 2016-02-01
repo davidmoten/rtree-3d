@@ -6,13 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.common.base.Optional;
+
 import rx.Subscriber;
 import rx.functions.Func1;
-
-import com.github.davidmoten.rtree.geometry.Geometry;
-import com.github.davidmoten.rtree.geometry.ListPair;
-import com.github.davidmoten.rtree.geometry.Rectangle;
-import com.google.common.base.Optional;
 
 final class Leaf<T, S extends Geometry> implements Node<T, S> {
 
@@ -39,7 +36,7 @@ final class Leaf<T, S extends Geometry> implements Node<T, S> {
     public void search(Func1<? super Geometry, Boolean> condition,
             Subscriber<? super Entry<T, S>> subscriber) {
 
-        if (!condition.call(this.geometry().mbr()))
+        if (!condition.call(this.geometry().mbb()))
             return;
 
         for (final Entry<T, S> entry : entries) {
