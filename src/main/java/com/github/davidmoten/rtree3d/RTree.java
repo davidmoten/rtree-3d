@@ -8,9 +8,9 @@ import com.google.common.base.Optional;
 public final class RTree<T, S extends Geometry> {
 
     private final Optional<? extends Node<T, S>> root;
-    
+
     private final Context context;
-    
+
     /**
      * Current size in Entries of the RTree.
      */
@@ -24,6 +24,11 @@ public final class RTree<T, S extends Geometry> {
 
     private RTree(Node<T, S> rootNode, int size, Context context) {
         this(Optional.of(rootNode), size, context);
+    }
+
+    public static <T, S extends Geometry> RTree<T, S> create() {
+        return new RTree<T, S>(Optional.absent(), 0,
+                new Context(4, 4, new SelectorMinimalVolumeIncrease(), new SplitterQuadratic()));
     }
 
     @SuppressWarnings("unchecked")
