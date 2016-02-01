@@ -25,7 +25,7 @@ public final class Box implements Geometry {
     public float minY() {
         return minY;
     }
-    
+
     public float minZ() {
         return minZ;
     }
@@ -50,8 +50,7 @@ public final class Box implements Geometry {
 
     @Override
     public Box mbb() {
-        // TODO Auto-generated method stub
-        return null;
+        return this;
     }
 
     @Override
@@ -61,19 +60,12 @@ public final class Box implements Geometry {
     }
 
     public float volume() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    public float surfaceArea() {
-        // TODO Auto-generated method stub
-        return 0;
+        return (maxX - minX) * (maxY - minY) * (maxZ - minZ);
     }
 
     public Box add(Box b) {
-        // TODO Auto-generated method stub
-        return null;
+        return create(Math.min(minX, b.minX), Math.min(minY, b.minY), Math.min(minZ, b.minZ),
+                Math.max(maxX, b.maxX), Math.max(maxY, b.maxY), Math.max(maxZ, b.maxZ));
     }
-
 
 }
