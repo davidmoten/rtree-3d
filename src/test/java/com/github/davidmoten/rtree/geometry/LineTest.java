@@ -27,14 +27,14 @@ public final class LineTest {
     @Test
     public void testDoesIntersectRectangle() {
         Line a = Geometries.line(-1, 0, 1, 0);
-        Rectangle b = Geometries.rectangle(0.2, -0.5, 0.8, 0.5);
+        Box b = Geometries.rectangle(0.2, -0.5, 0.8, 0.5);
         assertTrue(Intersects.lineIntersectsRectangle.call(a, b));
     }
 
     @Test
     public void testDoesNotIntersectRectangle() {
         Line a = Geometries.line(-1, 0, 1, 0);
-        Rectangle b = Geometries.rectangle(1.2, -0.5, 1.8, 0.5);
+        Box b = Geometries.rectangle(1.2, -0.5, 1.8, 0.5);
         assertFalse(Intersects.lineIntersectsRectangle.call(a, b));
     }
 
@@ -104,7 +104,7 @@ public final class LineTest {
     @Test
     public void testLineMbr() {
         Line a = Geometries.line(-2, 3, 1, -1);
-        Rectangle mbr = a.mbr();
+        Box mbr = a.mbr();
         assertEquals(-2, mbr.x1(), PRECISION);
         assertEquals(-1, mbr.y1(), PRECISION);
         assertEquals(1, mbr.x2(), PRECISION);
@@ -135,49 +135,49 @@ public final class LineTest {
     @Test
     public void testLineDistanceToRectangle() {
         Line a = Geometries.line(1, 2, 1, 2);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(Math.sqrt(5), a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenOneEndIsInside() {
         Line a = Geometries.line(1, 2, 4, 4);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenOtherEndIsInside() {
         Line a = Geometries.line(4, 4, 1, 2);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenContainsWestEdge() {
         Line a = Geometries.line(3, 1, 3, 10);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenContainsNorthEdge() {
         Line a = Geometries.line(2, 7, 10, 7);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenContainsSouthEdge() {
         Line a = Geometries.line(2, 3, 10, 3);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 
     @Test
     public void testLineDistanceToRectangleIsZeroWhenContainsEastEdge() {
         Line a = Geometries.line(7, 1, 7, 10);
-        Rectangle r = Geometries.rectangle(3, 3, 7, 7);
+        Box r = Geometries.rectangle(3, 3, 7, 7);
         assertEquals(0, a.distance(r), PRECISION);
     }
 

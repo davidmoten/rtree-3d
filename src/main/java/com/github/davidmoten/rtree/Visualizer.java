@@ -12,7 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.github.davidmoten.rtree.geometry.Geometry;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 import com.google.common.base.Optional;
 
 public final class Visualizer {
@@ -20,10 +20,10 @@ public final class Visualizer {
     private final RTree<?, Geometry> tree;
     private final int width;
     private final int height;
-    private final Rectangle view;
+    private final Box view;
     private final int maxDepth;
 
-    Visualizer(RTree<?, Geometry> tree, int width, int height, Rectangle view) {
+    Visualizer(RTree<?, Geometry> tree, int width, int height, Box view) {
         this.tree = tree;
         this.width = width;
         this.height = height;
@@ -94,12 +94,12 @@ public final class Visualizer {
             final Color color = Color.getHSBColor(node.getDepth() / (maxDepth + 1f), 1f, 1f);
             g.setStroke(new BasicStroke(Math.max(0.5f, maxDepth - node.getDepth() + 1 - 1)));
             g.setColor(color);
-            final Rectangle r = node.getRectangle();
+            final Box r = node.getRectangle();
             drawRectangle(g, r);
         }
     }
 
-    private void drawRectangle(Graphics2D g, Rectangle r) {
+    private void drawRectangle(Graphics2D g, Box r) {
         final double x1 = (r.x1() - view.x1()) / (view.x2() - view.x1()) * width;
         final double y1 = (r.y1() - view.y1()) / (view.y2() - view.y1()) * height;
         final double x2 = (r.x2() - view.x1()) / (view.x2() - view.x1()) * width;

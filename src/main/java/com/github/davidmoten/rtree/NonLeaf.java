@@ -11,14 +11,14 @@ import rx.functions.Func1;
 
 import com.github.davidmoten.rtree.geometry.Geometry;
 import com.github.davidmoten.rtree.geometry.ListPair;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
 final class NonLeaf<T, S extends Geometry> implements Node<T, S> {
 
     private final List<? extends Node<T, S>> children;
-    private final Rectangle mbr;
+    private final Box mbr;
     private final Context context;
 
     NonLeaf(List<? extends Node<T, S>> children, Context context) {

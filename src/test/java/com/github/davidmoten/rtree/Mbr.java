@@ -2,13 +2,13 @@ package com.github.davidmoten.rtree;
 
 import com.github.davidmoten.rtree.geometry.Geometry;
 import com.github.davidmoten.rtree.geometry.HasGeometry;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 
 public class Mbr implements HasGeometry {
 
-    private final Rectangle r;
+    private final Box r;
 
-    public Mbr(Rectangle r) {
+    public Mbr(Box r) {
         this.r = r;
     }
 

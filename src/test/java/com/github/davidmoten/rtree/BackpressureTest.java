@@ -16,7 +16,7 @@ import org.mockito.Mockito;
 
 import com.github.davidmoten.junit.Asserts;
 import com.github.davidmoten.rtree.geometry.Geometry;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 import com.github.davidmoten.util.ImmutableStack;
 
 import rx.Subscriber;
@@ -42,10 +42,10 @@ public class BackpressureTest {
 
     @Test
     public void testBackpressureSearchNodeWithConditionThatAlwaysReturnsFalse() {
-        RTree<Object, Rectangle> tree = RTree.maxChildren(3).<Object, Rectangle> create().add(e(1))
+        RTree<Object, Box> tree = RTree.maxChildren(3).<Object, Box> create().add(e(1))
                 .add(e(3)).add(e(5)).add(e(7));
 
-        Set<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
+        Set<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
         tree.search(e(1).geometry()).subscribe(backpressureSubscriber(found));
         assertEquals(1, found.size());
     }
@@ -136,27 +136,27 @@ public class BackpressureTest {
 
     @Test
     public void testBackpressureIterateWhenNodeHasMaxChildrenAndIsRoot() {
-        Entry<Object, Rectangle> e1 = RTreeTest.e(1);
+        Entry<Object, Box> e1 = RTreeTest.e(1);
         @SuppressWarnings("unchecked")
-        List<Entry<Object, Rectangle>> list = Arrays.asList(e1, e1, e1, e1);
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        List<Entry<Object, Box>> list = Arrays.asList(e1, e1, e1, e1);
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(list);
-        HashSet<Entry<Object, Rectangle>> expected = new HashSet<Entry<Object, Rectangle>>(list);
-        final HashSet<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
+        HashSet<Entry<Object, Box>> expected = new HashSet<Entry<Object, Box>>(list);
+        final HashSet<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
         tree.entries().subscribe(backpressureSubscriber(found));
         assertEquals(expected, found);
     }
 
     @Test
     public void testBackpressureRequestZero() {
-        Entry<Object, Rectangle> e1 = RTreeTest.e(1);
+        Entry<Object, Box> e1 = RTreeTest.e(1);
         @SuppressWarnings("unchecked")
-        List<Entry<Object, Rectangle>> list = Arrays.asList(e1, e1, e1, e1);
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        List<Entry<Object, Box>> list = Arrays.asList(e1, e1, e1, e1);
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(list);
-        HashSet<Entry<Object, Rectangle>> expected = new HashSet<Entry<Object, Rectangle>>(list);
-        final HashSet<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
-        tree.entries().subscribe(new Subscriber<Entry<Object, Rectangle>>() {
+        HashSet<Entry<Object, Box>> expected = new HashSet<Entry<Object, Box>>(list);
+        final HashSet<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
+        tree.entries().subscribe(new Subscriber<Entry<Object, Box>>() {
 
             @Override
             public void onStart() {
@@ -174,7 +174,7 @@ public class BackpressureTest {
             }
 
             @Override
-            public void onNext(Entry<Object, Rectangle> t) {
+            public void onNext(Entry<Object, Box> t) {
                 found.add(t);
                 request(0);
             }
@@ -184,52 +184,52 @@ public class BackpressureTest {
 
     @Test
     public void testBackpressureIterateWhenNodeHasMaxChildrenAndIsNotRoot() {
-        Entry<Object, Rectangle> e1 = RTreeTest.e(1);
-        List<Entry<Object, Rectangle>> list = new ArrayList<Entry<Object, Rectangle>>();
+        Entry<Object, Box> e1 = RTreeTest.e(1);
+        List<Entry<Object, Box>> list = new ArrayList<Entry<Object, Box>>();
         for (int i = 1; i <= 17; i++)
             list.add(e1);
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(list);
-        HashSet<Entry<Object, Rectangle>> expected = new HashSet<Entry<Object, Rectangle>>(list);
-        final HashSet<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
+        HashSet<Entry<Object, Box>> expected = new HashSet<Entry<Object, Box>>(list);
+        final HashSet<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
         tree.entries().subscribe(backpressureSubscriber(found));
         assertEquals(expected, found);
     }
 
     @Test
     public void testBackpressureIterateWhenConditionFailsAgainstNonLeafNode() {
-        Entry<Object, Rectangle> e1 = e(1);
-        List<Entry<Object, Rectangle>> list = new ArrayList<Entry<Object, Rectangle>>();
+        Entry<Object, Box> e1 = e(1);
+        List<Entry<Object, Box>> list = new ArrayList<Entry<Object, Box>>();
         for (int i = 1; i <= 17; i++)
             list.add(e1);
         list.add(e(2));
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(list);
-        HashSet<Entry<Object, Rectangle>> expected = new HashSet<Entry<Object, Rectangle>>(list);
-        final HashSet<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
+        HashSet<Entry<Object, Box>> expected = new HashSet<Entry<Object, Box>>(list);
+        final HashSet<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
         tree.entries().subscribe(backpressureSubscriber(found));
         assertEquals(expected, found);
     }
 
     @Test
     public void testBackpressureIterateWhenConditionFailsAgainstLeafNode() {
-        Entry<Object, Rectangle> e3 = e(3);
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        Entry<Object, Box> e3 = e(3);
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(e(1)).add(e3);
-        Set<Entry<Object, Rectangle>> expected = Collections.singleton(e3);
-        final Set<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
+        Set<Entry<Object, Box>> expected = Collections.singleton(e3);
+        final Set<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
         tree.search(e3.geometry()).subscribe(backpressureSubscriber(found));
         assertEquals(expected, found);
     }
 
     @Test
     public void testBackpressureFastPathNotInitiatedTwice() {
-        Entry<Object, Rectangle> e3 = e(3);
-        RTree<Object, Rectangle> tree = RTree.star().maxChildren(4).<Object, Rectangle> create()
+        Entry<Object, Box> e3 = e(3);
+        RTree<Object, Box> tree = RTree.star().maxChildren(4).<Object, Box> create()
                 .add(e(1)).add(e3);
-        Set<Entry<Object, Rectangle>> expected = Collections.singleton(e3);
-        final Set<Entry<Object, Rectangle>> found = new HashSet<Entry<Object, Rectangle>>();
-        tree.search(e3.geometry()).subscribe(new Subscriber<Entry<Object, Rectangle>>() {
+        Set<Entry<Object, Box>> expected = Collections.singleton(e3);
+        final Set<Entry<Object, Box>> found = new HashSet<Entry<Object, Box>>();
+        tree.search(e3.geometry()).subscribe(new Subscriber<Entry<Object, Box>>() {
 
             @Override
             public void onCompleted() {
@@ -242,7 +242,7 @@ public class BackpressureTest {
             }
 
             @Override
-            public void onNext(Entry<Object, Rectangle> t) {
+            public void onNext(Entry<Object, Box> t) {
                 found.add(t);
                 request(Long.MAX_VALUE);
             }
@@ -250,9 +250,9 @@ public class BackpressureTest {
         assertEquals(expected, found);
     }
 
-    private static Subscriber<Entry<Object, Rectangle>> backpressureSubscriber(
-            final Set<Entry<Object, Rectangle>> found) {
-        return new Subscriber<Entry<Object, Rectangle>>() {
+    private static Subscriber<Entry<Object, Box>> backpressureSubscriber(
+            final Set<Entry<Object, Box>> found) {
+        return new Subscriber<Entry<Object, Box>>() {
 
             @Override
             public void onStart() {
@@ -270,7 +270,7 @@ public class BackpressureTest {
             }
 
             @Override
-            public void onNext(Entry<Object, Rectangle> t) {
+            public void onNext(Entry<Object, Box> t) {
                 found.add(t);
                 request(1);
             }

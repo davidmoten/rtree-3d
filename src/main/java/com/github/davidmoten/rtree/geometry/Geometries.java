@@ -12,15 +12,15 @@ public final class Geometries {
         return Point.create(x, y);
     }
 
-    public static Rectangle rectangle(double x1, double y1, double x2, double y2) {
-        return Rectangle.create(x1, y1, x2, y2);
+    public static Box rectangle(double x1, double y1, double x2, double y2) {
+        return Box.create(x1, y1, x2, y2);
     }
 
     public static Circle circle(double x, double y, double radius) {
         return Circle.create(x, y, radius);
     }
 
-    public static Rectangle rectangleGeographic(double lon1, double lat1, double lon2,
+    public static Box rectangleGeographic(double lon1, double lat1, double lon2,
             double lat2) {
         double x1 = normalizeLongitude(lon1);
         double x2 = normalizeLongitude(lon2);

@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.github.davidmoten.rtree.geometry.HasGeometry;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 import com.google.common.base.Preconditions;
 
 /**
@@ -21,7 +21,7 @@ public final class Util {
     /**
      * Returns the minimum bounding rectangle of a number of items. Benchmarks
      * below indicate that when the number of items is &gt;1 this method is more
-     * performant than one using {@link Rectangle#add(Rectangle)}.
+     * performant than one using {@link Box#add(Box)}.
      * 
      * <pre>
      * Benchmark                             Mode  Samples         Score  Score error  Units
@@ -39,14 +39,14 @@ public final class Util {
      *            items to bound
      * @return the minimum bounding rectangle containings items
      */
-    public static Rectangle mbr(Collection<? extends HasGeometry> items) {
+    public static Box mbr(Collection<? extends HasGeometry> items) {
         Preconditions.checkArgument(!items.isEmpty());
         float minX1 = Float.MAX_VALUE;
         float minY1 = Float.MAX_VALUE;
         float maxX2 = -Float.MAX_VALUE;
         float maxY2 = -Float.MAX_VALUE;
         for (final HasGeometry item : items) {
-            Rectangle r = item.geometry().mbr();
+            Box r = item.geometry().mbr();
             if (r.x1() < minX1)
                 minX1 = r.x1();
             if (r.y1() < minY1)
@@ -56,7 +56,7 @@ public final class Util {
             if (r.y2() > maxY2)
                 maxY2 = r.y2();
         }
-        return Rectangle.create(minX1, minY1, maxX2, maxY2);
+        return Box.create(minX1, minY1, maxX2, maxY2);
     }
 
     static <T> List<T> add(List<T> list, T element) {

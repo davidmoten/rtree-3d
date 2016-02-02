@@ -21,14 +21,14 @@ public class CircleTest {
     @Test
     public void testDistance() {
         Circle circle = circle(0, 0, 1);
-        Rectangle r = Geometries.rectangle(1, 1, 2, 2);
+        Box r = Geometries.rectangle(1, 1, 2, 2);
         assertEquals(Math.sqrt(2) - 1, circle.distance(r), PRECISION);
     }
 
     @Test
     public void testMbr() {
         Circle circle = circle(1, 2, 3);
-        Rectangle r = Geometries.rectangle(-2, -1, 4, 5);
+        Box r = Geometries.rectangle(-2, -1, 4, 5);
         assertEquals(r, circle.mbr());
     }
 

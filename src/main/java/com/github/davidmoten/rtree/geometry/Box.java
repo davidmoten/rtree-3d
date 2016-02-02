@@ -5,18 +5,21 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
-public final class Rectangle implements Geometry, HasGeometry {
-    private final float x1, y1, x2, y2;
+public final class Box implements Geometry, HasGeometry {
+    private final float x1, y1, x2, y2, z1, z2;
 
-    protected Rectangle(float x1, float y1, float x2, float y2) {
+    private Box(float x1, float y1, float x2, float y2, float z1, float z2) {
         Preconditions.checkArgument(x2 >= x1);
         Preconditions.checkArgument(y2 >= y1);
+        Preconditions.checkArgument(z2 >= z1);
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
+        this.z1 = z1;
+        this.z2 = z2;
     }
-
+    
     public float x1() {
         return x1;
     }
@@ -32,22 +35,35 @@ public final class Rectangle implements Geometry, HasGeometry {
     public float y2() {
         return y2;
     }
-
-    public float area() {
-        return (x2 - x1) * (y2 - y1);
+    
+    public float z1() {
+        return z1;
     }
 
-    public Rectangle add(Rectangle r) {
-        return new Rectangle(Math.min(x1, r.x1), Math.min(y1, r.y1), Math.max(x2, r.x2), Math.max(
-                y2, r.y2));
+    public float z2() {
+        return z2;
     }
 
-    public static Rectangle create(double x1, double y1, double x2, double y2) {
-        return new Rectangle((float) x1, (float) y1, (float) x2, (float) y2);
+    public float volume() {
+        //TODO
+        return (x2 - x1) * (y2 - y1) ;
     }
 
-    public static Rectangle create(float x1, float y1, float x2, float y2) {
-        return new Rectangle(x1, y1, x2, y2);
+    public Box add(Box r) {
+        return new Box(Math.min(x1, r.x1), Math.min(y1, r.y1), Math.max(x2, r.x2), Math.max(
+                y2, r.y2), Math.min(z1, r.z1), Math.max(z2, r.z2));
+    }
+
+    public static Box create(double x1, double y1, double x2, double y2) {
+        return new Box((float) x1, (float) y1, (float) x2, (float) y2, 0, 0);
+    }
+
+    public static Box create(float x1, float y1, float x2, float y2) {
+        return new Box(x1, y1, x2, y2,0,0);
+    }
+    
+    public static Box create(float x1, float y1, float x2, float y2, float z1, float z2) {
+        return new Box(x1, y1, x2, y2, z1, z2);
     }
 
     public boolean contains(double x, double y) {
@@ -55,7 +71,7 @@ public final class Rectangle implements Geometry, HasGeometry {
     }
 
     @Override
-    public boolean intersects(Rectangle r) {
+    public boolean intersects(Box r) {
         float xMaxLeft = Math.max(x1(), r.x1());
         float xMinRight = Math.min(x2(), r.x2());
         if (xMinRight<xMaxLeft) 
@@ -68,17 +84,17 @@ public final class Rectangle implements Geometry, HasGeometry {
     }
 
     @Override
-    public double distance(Rectangle r) {
+    public double distance(Box r) {
         if (intersects(r))
             return 0;
         else {
-            Rectangle mostLeft = x1 < r.x1 ? this : r;
-            Rectangle mostRight = x1 > r.x1 ? this : r;
+            Box mostLeft = x1 < r.x1 ? this : r;
+            Box mostRight = x1 > r.x1 ? this : r;
             double xDifference = Math.max(0, mostLeft.x1 == mostRight.x1 ? 0 : mostRight.x1
                     - mostLeft.x2);
 
-            Rectangle upper = y1 < r.y1 ? this : r;
-            Rectangle lower = y1 > r.y1 ? this : r;
+            Box upper = y1 < r.y1 ? this : r;
+            Box lower = y1 > r.y1 ? this : r;
 
             double yDifference = Math.max(0, upper.y1 == lower.y1 ? 0 : lower.y1 - upper.y2);
 
@@ -87,7 +103,7 @@ public final class Rectangle implements Geometry, HasGeometry {
     }
 
     @Override
-    public Rectangle mbr() {
+    public Box mbr() {
         return this;
     }
 
@@ -103,7 +119,7 @@ public final class Rectangle implements Geometry, HasGeometry {
 
     @Override
     public boolean equals(Object obj) {
-        Optional<Rectangle> other = ObjectsHelper.asClass(obj, Rectangle.class);
+        Optional<Box> other = ObjectsHelper.asClass(obj, Box.class);
         if (other.isPresent()) {
             return Objects.equal(x1, other.get().x1) && Objects.equal(x2, other.get().x2)
                     && Objects.equal(y1, other.get().y1) && Objects.equal(y2, other.get().y2);
@@ -111,12 +127,12 @@ public final class Rectangle implements Geometry, HasGeometry {
             return false;
     }
 
-    public float intersectionArea(Rectangle r) {
+    public float intersectionArea(Box r) {
         if (!intersects(r))
             return 0;
         else
             return create(Math.max(x1, r.x1), Math.max(y1, r.y1), Math.min(x2, r.x2),
-                    Math.min(y2, r.y2)).area();
+                    Math.min(y2, r.y2)).volume();
     }
 
     public float perimeter() {

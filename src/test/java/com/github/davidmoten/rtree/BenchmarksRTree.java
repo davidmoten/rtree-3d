@@ -12,14 +12,14 @@ import rx.Subscriber;
 
 import com.github.davidmoten.rtree.geometry.Geometries;
 import com.github.davidmoten.rtree.geometry.Point;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 
 @State(Scope.Benchmark)
 public class BenchmarksRTree {
 
     private final List<Entry<Object, Point>> entries = GreekEarthquakes.entriesList();
 
-    private final List<Entry<Object, Rectangle>> some = entries1000();
+    private final List<Entry<Object, Box>> some = entries1000();
 
     private final RTree<Object, Point> defaultTreeM4 = RTree.maxChildren(4)
             .<Object, Point> create().add(entries);
@@ -45,29 +45,29 @@ public class BenchmarksRTree {
     private final RTree<Object, Point> starTreeM128 = RTree.maxChildren(128).star()
             .<Object, Point> create().add(entries);
 
-    private final RTree<Object, Rectangle> smallDefaultTreeM4 = RTree.maxChildren(4)
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallDefaultTreeM4 = RTree.maxChildren(4)
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallDefaultTreeM10 = RTree.maxChildren(10)
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallDefaultTreeM10 = RTree.maxChildren(10)
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallStarTreeM4 = RTree.maxChildren(4).star()
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallStarTreeM4 = RTree.maxChildren(4).star()
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallStarTreeM10 = RTree.maxChildren(10).star()
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallStarTreeM10 = RTree.maxChildren(10).star()
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallDefaultTreeM32 = RTree.maxChildren(32)
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallDefaultTreeM32 = RTree.maxChildren(32)
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallStarTreeM32 = RTree.maxChildren(32).star()
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallStarTreeM32 = RTree.maxChildren(32).star()
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallDefaultTreeM128 = RTree.maxChildren(128)
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallDefaultTreeM128 = RTree.maxChildren(128)
+            .<Object, Box> create().add(some);
 
-    private final RTree<Object, Rectangle> smallStarTreeM128 = RTree.maxChildren(128).star()
-            .<Object, Rectangle> create().add(some);
+    private final RTree<Object, Box> smallStarTreeM128 = RTree.maxChildren(128).star()
+            .<Object, Box> create().add(some);
 
     @Benchmark
     public void defaultRTreeInsertOneEntryIntoGreekDataEntriesMaxChildren004() {
@@ -243,7 +243,7 @@ public class BenchmarksRTree {
         tree.delete(entries.get(1000), true);
     }
 
-    private void search(RTree<Object, Rectangle> tree) {
+    private void search(RTree<Object, Box> tree) {
         // returns 10 results
         tree.search(Geometries.rectangle(500, 500, 630, 630)).subscribe();
     }
@@ -279,7 +279,7 @@ public class BenchmarksRTree {
         });
     }
 
-    private void insertRectangle(RTree<Object, Rectangle> tree) {
+    private void insertRectangle(RTree<Object, Box> tree) {
         tree.add(new Object(), RTreeTest.random());
     }
 

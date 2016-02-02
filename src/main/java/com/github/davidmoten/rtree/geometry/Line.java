@@ -32,7 +32,7 @@ public final class Line implements Geometry {
     }
 
     @Override
-    public double distance(Rectangle r) {
+    public double distance(Box r) {
         if (r.contains(x1, y1) || r.contains(x2, y2)) {
             return 0;
         } else {
@@ -65,13 +65,13 @@ public final class Line implements Geometry {
     }
 
     @Override
-    public Rectangle mbr() {
+    public Box mbr() {
         return Geometries.rectangle(Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2),
                 Math.max(y1, y2));
     }
 
     @Override
-    public boolean intersects(Rectangle r) {
+    public boolean intersects(Box r) {
         GeometryFactory gf = new GeometryFactory();
         GeometricShapeFactory f = new GeometricShapeFactory(gf);
         f.setBase(new Coordinate(r.x1(), r.y1()));

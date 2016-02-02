@@ -7,12 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.davidmoten.rtree.geometry.Geometries;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 
 public class Utilities {
 
-    static List<Entry<Object, Rectangle>> entries1000() {
-        List<Entry<Object, Rectangle>> list = new ArrayList<Entry<Object, Rectangle>>();
+    static List<Entry<Object, Box>> entries1000() {
+        List<Entry<Object, Box>> list = new ArrayList<Entry<Object, Box>>();
         BufferedReader br = new BufferedReader(new InputStreamReader(
                 BenchmarksRTree.class.getResourceAsStream("/1000.txt")));
         String line;

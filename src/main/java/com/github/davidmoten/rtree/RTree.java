@@ -11,7 +11,7 @@ import com.github.davidmoten.rtree.geometry.Geometry;
 import com.github.davidmoten.rtree.geometry.Intersects;
 import com.github.davidmoten.rtree.geometry.Line;
 import com.github.davidmoten.rtree.geometry.Point;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 import com.github.davidmoten.rx.operators.OperatorBoundedPriorityQueue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -528,7 +528,7 @@ public final class RTree<T, S extends Geometry> {
      *            the rectangle to check intersection with
      * @return whether the geometry and the rectangle intersect
      */
-    public static Func1<Geometry, Boolean> intersects(final Rectangle r) {
+    public static Func1<Geometry, Boolean> intersects(final Box r) {
         return new Func1<Geometry, Boolean>() {
             @Override
             public Boolean call(Geometry g) {
@@ -557,7 +557,7 @@ public final class RTree<T, S extends Geometry> {
      *            rectangle to check intersection with the entry mbr
      * @return entries that intersect with the rectangle r
      */
-    public Observable<Entry<T, S>> search(final Rectangle r) {
+    public Observable<Entry<T, S>> search(final Box r) {
         return search(intersects(r));
     }
 
@@ -592,7 +592,7 @@ public final class RTree<T, S extends Geometry> {
      *            entries returned must be within this distance from rectangle r
      * @return the sequence of matching entries
      */
-    public Observable<Entry<T, S>> search(final Rectangle r, final double maxDistance) {
+    public Observable<Entry<T, S>> search(final Box r, final double maxDistance) {
         return search(new Func1<Geometry, Boolean>() {
             @Override
             public Boolean call(Geometry g) {
@@ -686,7 +686,7 @@ public final class RTree<T, S extends Geometry> {
      *            max number of entries to return
      * @return nearest entries to maxCount, in ascending order of distance
      */
-    public Observable<Entry<T, S>> nearest(final Rectangle r, final double maxDistance,
+    public Observable<Entry<T, S>> nearest(final Box r, final double maxDistance,
             int maxCount) {
         return search(r, maxDistance).lift(new OperatorBoundedPriorityQueue<Entry<T, S>>(maxCount,
                 Comparators.<T, S> ascendingDistance(r)));
@@ -731,7 +731,7 @@ public final class RTree<T, S extends Geometry> {
      * @return visualizer
      */
     @SuppressWarnings("unchecked")
-    public Visualizer visualize(int width, int height, Rectangle view) {
+    public Visualizer visualize(int width, int height, Box view) {
         return new Visualizer((RTree<?, Geometry>) this, width, height, view);
     }
 
@@ -751,12 +751,12 @@ public final class RTree<T, S extends Geometry> {
         return visualize(width, height, calculateMaxView(this));
     }
 
-    private Rectangle calculateMaxView(RTree<T, S> tree) {
-        return tree.entries().reduce(Optional.<Rectangle> absent(),
-                new Func2<Optional<Rectangle>, Entry<T, S>, Optional<Rectangle>>() {
+    private Box calculateMaxView(RTree<T, S> tree) {
+        return tree.entries().reduce(Optional.<Box> absent(),
+                new Func2<Optional<Box>, Entry<T, S>, Optional<Box>>() {
 
                     @Override
-                    public Optional<Rectangle> call(Optional<Rectangle> r, Entry<T, S> entry) {
+                    public Optional<Box> call(Optional<Box> r, Entry<T, S> entry) {
                         if (r.isPresent())
                             return of(r.get().add(entry.geometry().mbr()));
                         else
@@ -775,7 +775,7 @@ public final class RTree<T, S extends Geometry> {
      * 
      * @return minimum bounding rectangle of all entries in RTree
      */
-    public Optional<Rectangle> mbr() {
+    public Optional<Box> mbr() {
         if (!root.isPresent())
             return Optional.absent();
         else

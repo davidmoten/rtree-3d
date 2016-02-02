@@ -12,7 +12,7 @@ import rx.functions.Func1;
 import com.github.davidmoten.grumpy.core.Position;
 import com.github.davidmoten.rtree.geometry.Geometries;
 import com.github.davidmoten.rtree.geometry.Point;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 
 public class LatLongExampleTest {
 
@@ -49,7 +49,7 @@ public class LatLongExampleTest {
         // First we need to calculate an enclosing lat long rectangle for this
         // distance then we refine on the exact distance
         final Position from = Position.create(lonLat.y(), lonLat.x());
-        Rectangle bounds = createBounds(from, distanceKm);
+        Box bounds = createBounds(from, distanceKm);
 
         return tree
         // do the first search using the bounds
@@ -67,7 +67,7 @@ public class LatLongExampleTest {
 
     @Test
     public void testSearchLatLongCircles() {
-        RTree<GeoCircleValue<String>, Rectangle> tree = RTree.star().create();
+        RTree<GeoCircleValue<String>, Box> tree = RTree.star().create();
         // create circles around these major towns
         GeoCircleValue<String> sydneyCircle = createGeoCircleValue(sydney, 100, "Sydney");
         GeoCircleValue<String> canberraCircle = createGeoCircleValue(canberra, 50, "Canberra");
@@ -84,11 +84,11 @@ public class LatLongExampleTest {
         final Point location = bungendore;
         String result = tree.search(location)
         // filter on the exact distance from the centre of the GeoCircle
-                .filter(new Func1<Entry<GeoCircleValue<String>, Rectangle>, Boolean>() {
+                .filter(new Func1<Entry<GeoCircleValue<String>, Box>, Boolean>() {
                     Position from = Position.create(location.y(), location.x());
 
                     @Override
-                    public Boolean call(Entry<GeoCircleValue<String>, Rectangle> entry) {
+                    public Boolean call(Entry<GeoCircleValue<String>, Box> entry) {
                         Position centre = Position.create(entry.value().lat, entry.value().lon);
                         return from.getDistanceToKm(centre) < entry.value().radiusKm;
                     }
@@ -100,7 +100,7 @@ public class LatLongExampleTest {
         assertEquals("Canberra", result);
     }
 
-    private static Rectangle createBounds(final Position from, final double distanceKm) {
+    private static Box createBounds(final Position from, final double distanceKm) {
         // this calculates a pretty accurate bounding box. Depending on the
         // performance you require you wouldn't have to be this accurate because
         // accuracy is enforced later
@@ -116,8 +116,8 @@ public class LatLongExampleTest {
         return new GeoCircleValue<T>(point.y(), point.x(), radiusKm, value);
     }
 
-    private static <T> RTree<GeoCircleValue<T>, Rectangle> add(
-            RTree<GeoCircleValue<T>, Rectangle> tree, GeoCircleValue<T> c) {
+    private static <T> RTree<GeoCircleValue<T>, Box> add(
+            RTree<GeoCircleValue<T>, Box> tree, GeoCircleValue<T> c) {
         return tree.add(c, createBounds(Position.create(c.lat, c.lon), c.radiusKm));
     }
 

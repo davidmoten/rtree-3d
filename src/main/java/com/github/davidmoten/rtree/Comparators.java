@@ -8,7 +8,7 @@ import rx.functions.Func1;
 import com.github.davidmoten.rtree.geometry.Geometry;
 import com.github.davidmoten.rtree.geometry.HasGeometry;
 import com.github.davidmoten.rtree.geometry.ListPair;
-import com.github.davidmoten.rtree.geometry.Rectangle;
+import com.github.davidmoten.rtree.geometry.Box;
 
 /**
  * Utility functions asociated with {@link Comparator}s, especially for use with
@@ -49,22 +49,22 @@ public final class Comparators {
      *         with the rectangle r
      */
     public static <T extends HasGeometry> Comparator<HasGeometry> overlapAreaComparator(
-            final Rectangle r, final List<T> list) {
+            final Box r, final List<T> list) {
         return toComparator(Functions.overlapArea(r, list));
     }
 
     public static <T extends HasGeometry> Comparator<HasGeometry> areaIncreaseComparator(
-            final Rectangle r) {
+            final Box r) {
         return toComparator(Functions.areaIncrease(r));
     }
 
-    public static Comparator<HasGeometry> areaComparator(final Rectangle r) {
+    public static Comparator<HasGeometry> areaComparator(final Box r) {
         return new Comparator<HasGeometry>() {
 
             @Override
             public int compare(HasGeometry g1, HasGeometry g2) {
-                return ((Float) g1.geometry().mbr().add(r).area()).compareTo(g2.geometry().mbr()
-                        .add(r).area());
+                return ((Float) g1.geometry().mbr().add(r).volume()).compareTo(g2.geometry().mbr()
+                        .add(r).volume());
             }
         };
     }
@@ -111,7 +111,7 @@ public final class Comparators {
      * @return a comparator to sort by ascending distance from the rectangle
      */
     public static <T, S extends Geometry> Comparator<Entry<T, S>> ascendingDistance(
-            final Rectangle r) {
+            final Box r) {
         return new Comparator<Entry<T, S>>() {
             @Override
             public int compare(Entry<T, S> e1, Entry<T, S> e2) {
