@@ -22,6 +22,11 @@ public final class OperatorBoundedPriorityQueue<T> implements Operator<T, T> {
         final MinMaxPriorityQueue<T> q = MinMaxPriorityQueue.orderedBy(comparator)
                 .maximumSize(maximumSize).create();
         return new Subscriber<T>(child) {
+            
+            @Override
+            public void onStart() {
+                request(Long.MAX_VALUE);
+            }
 
             @Override
             public void onCompleted() {
