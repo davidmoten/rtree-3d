@@ -146,7 +146,7 @@ public final class Box implements Geometry, HasGeometry {
             return false;
     }
 
-    public float intersectionArea(Box r) {
+    public float intersectionVolume(Box r) {
         //TODO volume
         if (!intersects(r))
             return 0;
@@ -155,7 +155,7 @@ public final class Box implements Geometry, HasGeometry {
                     Math.min(y2, r.y2)).volume();
     }
 
-    public float perimeter() {
+    public float surfaceArea() {
         //TODO change to surface area
         return 2 * (x2 - x1) + 2 * (y2 - y1);
     }

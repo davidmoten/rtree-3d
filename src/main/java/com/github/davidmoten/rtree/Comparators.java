@@ -26,11 +26,11 @@ public final class Comparators {
     /**
      * Compares the sum of the areas of two ListPairs.
      */
-    public static final Comparator<ListPair<?>> areaPairComparator = new Comparator<ListPair<?>>() {
+    public static final Comparator<ListPair<?>> volumePairComparator = new Comparator<ListPair<?>>() {
 
         @Override
         public int compare(ListPair<?> p1, ListPair<?> p2) {
-            return ((Float) p1.areaSum()).compareTo(p2.areaSum());
+            return ((Float) p1.volumeSum()).compareTo(p2.volumeSum());
         }
     };
 
@@ -48,17 +48,17 @@ public final class Comparators {
      * @return the total of the areas of overlap of the geometries in the list
      *         with the rectangle r
      */
-    public static <T extends HasGeometry> Comparator<HasGeometry> overlapAreaComparator(
+    public static <T extends HasGeometry> Comparator<HasGeometry> overlapVolumeComparator(
             final Box r, final List<T> list) {
-        return toComparator(Functions.overlapArea(r, list));
+        return toComparator(Functions.overlapVolume(r, list));
     }
 
-    public static <T extends HasGeometry> Comparator<HasGeometry> areaIncreaseComparator(
+    public static <T extends HasGeometry> Comparator<HasGeometry> volumeIncreaseComparator(
             final Box r) {
         return toComparator(Functions.volumeIncrease(r));
     }
 
-    public static Comparator<HasGeometry> areaComparator(final Box r) {
+    public static Comparator<HasGeometry> volumeComparator(final Box r) {
         return new Comparator<HasGeometry>() {
 
             @Override

@@ -23,11 +23,11 @@ public final class Functions {
         @Override
         public Double call(ListPair<? extends HasGeometry> pair) {
             return (double) pair.group1().geometry().mbr()
-                    .intersectionArea(pair.group2().geometry().mbr());
+                    .intersectionVolume(pair.group2().geometry().mbr());
         }
     };
 
-    public static Func1<HasGeometry, Double> overlapArea(final Box r,
+    public static Func1<HasGeometry, Double> overlapVolume(final Box r,
             final List<? extends HasGeometry> list) {
         return new Func1<HasGeometry, Double>() {
 
@@ -37,7 +37,7 @@ public final class Functions {
                 double m = 0;
                 for (HasGeometry other : list) {
                     if (other != g) {
-                        m += gPlusR.intersectionArea(other.geometry().mbr());
+                        m += gPlusR.intersectionVolume(other.geometry().mbr());
                     }
                 }
                 return m;

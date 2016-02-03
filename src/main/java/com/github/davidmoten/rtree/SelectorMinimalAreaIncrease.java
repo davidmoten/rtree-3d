@@ -1,7 +1,7 @@
 package com.github.davidmoten.rtree;
 
-import static com.github.davidmoten.rtree.Comparators.areaComparator;
-import static com.github.davidmoten.rtree.Comparators.areaIncreaseComparator;
+import static com.github.davidmoten.rtree.Comparators.volumeComparator;
+import static com.github.davidmoten.rtree.Comparators.volumeIncreaseComparator;
 import static com.github.davidmoten.rtree.Comparators.compose;
 import static java.util.Collections.min;
 
@@ -18,6 +18,6 @@ public final class SelectorMinimalAreaIncrease implements Selector {
     @SuppressWarnings("unchecked")
     @Override
     public <T, S extends Geometry> Node<T, S> select(Geometry g, List<? extends Node<T, S>> nodes) {
-        return min(nodes, compose(areaIncreaseComparator(g.mbr()), areaComparator(g.mbr())));
+        return min(nodes, compose(volumeIncreaseComparator(g.mbr()), volumeComparator(g.mbr())));
     }
 }

@@ -22,7 +22,7 @@ public final class SplitterRStar implements Splitter {
     @SuppressWarnings("unchecked")
     public SplitterRStar() {
         this.comparator = Comparators.compose(Comparators.overlapListPairComparator,
-                Comparators.areaPairComparator);
+                Comparators.volumePairComparator);
     }
 
     @Override
