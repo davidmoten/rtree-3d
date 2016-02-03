@@ -45,8 +45,7 @@ public final class Box implements Geometry, HasGeometry {
     }
 
     public float volume() {
-        //TODO
-        return (x2 - x1) * (y2 - y1) ;
+        return (x2 - x1) * (y2 - y1) * (z2 -z1) ;
     }
 
     public Box add(Box r) {
@@ -66,12 +65,10 @@ public final class Box implements Geometry, HasGeometry {
         return new Box(x1, y1, x2, y2, z1, z2);
     }
 
-    public boolean contains(double x, double y) {
-        return x >= x1 && x <= x2 && y >= y1 && y <= y2;
-    }
 
     @Override
     public boolean intersects(Box r) {
+        //TODO unit test
         float xMaxLeft = Math.max(x1(), r.x1());
         float xMinRight = Math.min(x2(), r.x2());
         if (xMinRight<xMaxLeft) 
@@ -79,12 +76,19 @@ public final class Box implements Geometry, HasGeometry {
         else {
             float yMaxBottom = Math.max(y1(), r.y1());
             float yMinTop = Math.min(y2(), r.y2());
-            return yMinTop>=yMaxBottom;
+            if (yMinTop<yMaxBottom) 
+                return false;
+            else {
+                float zMax= Math.max(z1(), r.z1());
+                float zMin = Math.min(z2(), r.z2());
+                return (zMax >= zMin);
+            }
         }
     }
 
     @Override
     public double distance(Box r) {
+        //TODO
         if (intersects(r))
             return 0;
         else {
@@ -109,7 +113,21 @@ public final class Box implements Geometry, HasGeometry {
 
     @Override
     public String toString() {
-        return "Rectangle [x1=" + x1 + ", y1=" + y1 + ", x2=" + x2 + ", y2=" + y2 + "]";
+        StringBuilder b = new StringBuilder();
+        b.append("Box [x1=");
+        b.append(x1);
+        b.append(", y1=");
+        b.append(y1);
+        b.append(", x2=");
+        b.append(x2);
+        b.append(", y2=");
+        b.append(y2);
+        b.append(", z1=");
+        b.append(z1);
+        b.append(", z2=");
+        b.append(z2);
+        b.append("]");
+        return b.toString();
     }
 
     @Override
@@ -122,12 +140,14 @@ public final class Box implements Geometry, HasGeometry {
         Optional<Box> other = ObjectsHelper.asClass(obj, Box.class);
         if (other.isPresent()) {
             return Objects.equal(x1, other.get().x1) && Objects.equal(x2, other.get().x2)
-                    && Objects.equal(y1, other.get().y1) && Objects.equal(y2, other.get().y2);
+                    && Objects.equal(y1, other.get().y1) && Objects.equal(y2, other.get().y2)
+                    && Objects.equal(z1, other.get().z1) && Objects.equal(z2, other.get().z2);
         } else
             return false;
     }
 
     public float intersectionArea(Box r) {
+        //TODO volume
         if (!intersects(r))
             return 0;
         else
@@ -136,6 +156,7 @@ public final class Box implements Geometry, HasGeometry {
     }
 
     public float perimeter() {
+        //TODO change to surface area
         return 2 * (x2 - x1) + 2 * (y2 - y1);
     }
 

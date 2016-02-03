@@ -55,7 +55,7 @@ public final class Comparators {
 
     public static <T extends HasGeometry> Comparator<HasGeometry> areaIncreaseComparator(
             final Box r) {
-        return toComparator(Functions.areaIncrease(r));
+        return toComparator(Functions.volumeIncrease(r));
     }
 
     public static Comparator<HasGeometry> areaComparator(final Box r) {

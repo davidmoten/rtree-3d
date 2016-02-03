@@ -48,7 +48,4 @@ public final class Geometries {
         }
     }
 
-    public static Line line(double x1, double y1, double x2, double y2) {
-        return Line.create((float) x1, (float) y1, (float) x2, (float) y2);
-    }
 }

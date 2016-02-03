@@ -75,7 +75,4 @@ public final class Circle implements Geometry {
         return x * x;
     }
 
-    public boolean intersects(Line line) {
-        return line.intersects(this);
-    }
 }

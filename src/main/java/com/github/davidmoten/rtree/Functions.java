@@ -45,7 +45,7 @@ public final class Functions {
         };
     }
 
-    public static Func1<HasGeometry, Double> areaIncrease(final Box r) {
+    public static Func1<HasGeometry, Double> volumeIncrease(final Box r) {
         return new Func1<HasGeometry, Double>() {
             @Override
             public Double call(HasGeometry g) {

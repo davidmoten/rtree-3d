@@ -6,12 +6,11 @@ import static com.google.common.base.Optional.of;
 
 import java.util.List;
 
+import com.github.davidmoten.rtree.geometry.Box;
 import com.github.davidmoten.rtree.geometry.Circle;
 import com.github.davidmoten.rtree.geometry.Geometry;
 import com.github.davidmoten.rtree.geometry.Intersects;
-import com.github.davidmoten.rtree.geometry.Line;
 import com.github.davidmoten.rtree.geometry.Point;
-import com.github.davidmoten.rtree.geometry.Box;
 import com.github.davidmoten.rx.operators.OperatorBoundedPriorityQueue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -575,10 +574,6 @@ public final class RTree<T, S extends Geometry> {
 
     public Observable<Entry<T, S>> search(Circle circle) {
         return search(circle, Intersects.geometryIntersectsCircle);
-    }
-
-    public Observable<Entry<T, S>> search(Line line) {
-        return search(line, Intersects.geometryIntersectsLine);
     }
 
     /**
