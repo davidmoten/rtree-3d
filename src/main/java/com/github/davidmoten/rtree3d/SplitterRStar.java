@@ -8,12 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import rx.functions.Func1;
-
 import com.github.davidmoten.rtree3d.geometry.HasGeometry;
 import com.github.davidmoten.rtree3d.geometry.ListPair;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+
+import rx.functions.Func1;
 
 public final class SplitterRStar implements Splitter {
 
@@ -36,6 +36,8 @@ public final class SplitterRStar implements Splitter {
         map.put(SortType.X_UPPER, getPairs(minSize, sort(items, INCREASING_X_UPPER)));
         map.put(SortType.Y_LOWER, getPairs(minSize, sort(items, INCREASING_Y_LOWER)));
         map.put(SortType.Y_UPPER, getPairs(minSize, sort(items, INCREASING_Y_UPPER)));
+        map.put(SortType.Z_LOWER, getPairs(minSize, sort(items, INCREASING_Z_LOWER)));
+        map.put(SortType.Z_UPPER, getPairs(minSize, sort(items, INCREASING_Z_UPPER)));
 
         // compute S the sum of all margin-values of the lists above
         // the list with the least S is then used to find minimum overlap
@@ -47,11 +49,11 @@ public final class SplitterRStar implements Splitter {
     }
 
     private static enum SortType {
-        X_LOWER, X_UPPER, Y_LOWER, Y_UPPER;
+        X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER;
     }
 
-    private static final List<SortType> sortTypes = Collections.unmodifiableList(Arrays
-            .asList(SortType.values()));
+    private static final List<SortType> sortTypes = Collections
+            .unmodifiableList(Arrays.asList(SortType.values()));
 
     private static <T extends HasGeometry> Comparator<SortType> marginSumComparator(
             final Map<SortType, List<ListPair<T>>> map) {
@@ -118,6 +120,22 @@ public final class SplitterRStar implements Splitter {
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
             return ((Float) n1.geometry().mbr().y2()).compareTo(n2.geometry().mbr().y2());
+        }
+    };
+
+    private static Comparator<HasGeometry> INCREASING_Z_LOWER = new Comparator<HasGeometry>() {
+
+        @Override
+        public int compare(HasGeometry n1, HasGeometry n2) {
+            return ((Float) n1.geometry().mbr().z1()).compareTo(n2.geometry().mbr().z1());
+        }
+    };
+
+    private static Comparator<HasGeometry> INCREASING_Z_UPPER = new Comparator<HasGeometry>() {
+
+        @Override
+        public int compare(HasGeometry n1, HasGeometry n2) {
+            return ((Float) n1.geometry().mbr().z2()).compareTo(n2.geometry().mbr().z2());
         }
     };
 

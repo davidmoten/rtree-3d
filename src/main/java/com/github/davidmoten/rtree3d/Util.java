@@ -43,20 +43,26 @@ public final class Util {
         Preconditions.checkArgument(!items.isEmpty());
         float minX1 = Float.MAX_VALUE;
         float minY1 = Float.MAX_VALUE;
+        float minZ1 = Float.MAX_VALUE;
         float maxX2 = -Float.MAX_VALUE;
         float maxY2 = -Float.MAX_VALUE;
+        float maxZ2 = -Float.MAX_VALUE;
         for (final HasGeometry item : items) {
             Box r = item.geometry().mbr();
             if (r.x1() < minX1)
                 minX1 = r.x1();
             if (r.y1() < minY1)
                 minY1 = r.y1();
+            if (r.z1() < minZ1)
+                minZ1 = r.z1();
             if (r.x2() > maxX2)
                 maxX2 = r.x2();
             if (r.y2() > maxY2)
                 maxY2 = r.y2();
+            if (r.z2() > maxZ2)
+                maxZ2 = r.z2();
         }
-        return Box.create(minX1, minY1, maxX2, maxY2);
+        return Box.create(minX1, minY1, minZ1, maxX2, maxY2, maxZ2);
     }
 
     static <T> List<T> add(List<T> list, T element) {
@@ -80,5 +86,5 @@ public final class Util {
         list2.addAll(replacements);
         return list2;
     }
-    
+
 }

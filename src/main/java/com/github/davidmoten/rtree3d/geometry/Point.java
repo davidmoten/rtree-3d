@@ -37,7 +37,8 @@ public final class Point implements Geometry {
     public double distanceSquared(Point p) {
         float dx = mbr().x1() - p.mbr().x1();
         float dy = mbr().y1() - p.mbr().y1();
-        return dx * dx + dy * dy;
+        float dz = mbr().z1() - p.mbr().z1();
+        return dx * dx + dy * dy + dz * dz;
     }
 
     @Override
@@ -69,7 +70,15 @@ public final class Point implements Geometry {
 
     @Override
     public String toString() {
-        return "Point [x=" + x() + ", y=" + y() + "]";
+        StringBuilder b = new StringBuilder();
+        b.append("Point [x=");
+        b.append(mbr.x1());
+        b.append(", y=");
+        b.append(mbr.y1());
+        b.append(", z=");
+        b.append(mbr.z1());
+        b.append("]");
+        return b.toString();
     }
 
 }

@@ -65,8 +65,8 @@ public class RTree3DTest {
 
                     }
                 });
-        RTree<Object, Point> tree = RTree.<Object, Point> create().add(entries).last().toBlocking()
-                .single();
+        RTree<Object, Point> tree = RTree.star().minChildren(50).maxChildren(1000).create();
+        tree = tree.add(entries).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
 
