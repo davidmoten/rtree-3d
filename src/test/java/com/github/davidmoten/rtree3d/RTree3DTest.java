@@ -8,6 +8,7 @@ import java.util.zip.GZIPInputStream;
 
 import org.junit.Test;
 
+import com.github.davidmoten.rtree3d.geometry.Box;
 import com.github.davidmoten.rtree3d.geometry.Point;
 import com.github.davidmoten.rx.Strings;
 
@@ -69,6 +70,11 @@ public class RTree3DTest {
         tree = tree.add(entries).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
+        long t = System.currentTimeMillis();
+        int count = tree.search(Box.create(39.0, 22.0, 0, 40.0, 23.0, 3.15684946E11)).count()
+                .toBlocking().single();
+        t = System.currentTimeMillis() - t;
+        System.out.println("search=" + count + " in " + t + "ms");
 
     }
 
