@@ -8,12 +8,16 @@ public final class Point implements Geometry {
 
     private final Box mbr;
 
-    protected Point(float x, float y) {
-        this.mbr = Box.create(x, y, x, y);
+    Point(float x, float y, float z) {
+        this.mbr = Box.create(x, y, z, x, y, z);
     }
 
     public static Point create(double x, double y) {
-        return new Point((float) x, (float) y);
+        return new Point((float) x, (float) y, 0);
+    }
+
+    public static Point create(double x, double y, double z) {
+        return new Point((float) x, (float) y, (float) z);
     }
 
     @Override

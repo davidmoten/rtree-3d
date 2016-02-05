@@ -6,10 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.github.davidmoten.rtree3d.geometry.Box;
-import com.github.davidmoten.rtree3d.geometry.Geometries;
-import com.github.davidmoten.rtree3d.geometry.Point;
-
 public class PointTest {
 
     private static final double PRECISION = 0.000001;
@@ -37,8 +33,8 @@ public class PointTest {
 
     @Test
     public void testMbr() {
-        Point p = Geometries.point(1, 2);
-        Box r = Geometries.box(1, 2, 1, 2);
+        Point p = Geometries.point(1, 2, 0);
+        Box r = Geometries.box(1, 2, 0, 1, 2, 0);
         assertEquals(r, p.mbr());
     }
 

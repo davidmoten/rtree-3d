@@ -39,7 +39,7 @@ public final class Circle implements Geometry {
 
     @Override
     public double distance(Box r) {
-        return Math.max(0, new Point(x, y).distance(r) - radius);
+        return Math.max(0, Point.create(x, y).distance(r) - radius);
     }
 
     @Override
@@ -49,7 +49,7 @@ public final class Circle implements Geometry {
 
     public boolean intersects(Circle c) {
         double total = radius + c.radius;
-        return new Point(x, y).distanceSquared(new Point(c.x, c.y)) <= total * total;
+        return Point.create(x, y).distanceSquared(Point.create(c.x, c.y)) <= total * total;
     }
 
     @Override
