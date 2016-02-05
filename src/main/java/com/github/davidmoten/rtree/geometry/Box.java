@@ -8,7 +8,7 @@ import com.google.common.base.Preconditions;
 public final class Box implements Geometry, HasGeometry {
     private final float x1, y1, x2, y2, z1, z2;
 
-    private Box(float x1, float y1, float x2, float y2, float z1, float z2) {
+    private Box(float x1, float y1, float z1, float x2, float y2, float z2) {
         Preconditions.checkArgument(x2 >= x1);
         Preconditions.checkArgument(y2 >= y1);
         Preconditions.checkArgument(z2 >= z1);
@@ -19,7 +19,7 @@ public final class Box implements Geometry, HasGeometry {
         this.z1 = z1;
         this.z2 = z2;
     }
-    
+
     public float x1() {
         return x1;
     }
@@ -35,7 +35,7 @@ public final class Box implements Geometry, HasGeometry {
     public float y2() {
         return y2;
     }
-    
+
     public float z1() {
         return z1;
     }
@@ -45,65 +45,64 @@ public final class Box implements Geometry, HasGeometry {
     }
 
     public float volume() {
-        return (x2 - x1) * (y2 - y1) * (z2 -z1) ;
+        return (x2 - x1) * (y2 - y1) * (z2 - z1);
     }
 
     public Box add(Box r) {
-        return new Box(Math.min(x1, r.x1), Math.min(y1, r.y1), Math.max(x2, r.x2), Math.max(
-                y2, r.y2), Math.min(z1, r.z1), Math.max(z2, r.z2));
+        return new Box(Math.min(x1, r.x1), Math.min(y1, r.y1), Math.min(z1, r.z1),
+                Math.max(x2, r.x2), Math.max(y2, r.y2), Math.max(z2, r.z2));
     }
 
     public static Box create(double x1, double y1, double x2, double y2) {
-        return new Box((float) x1, (float) y1, (float) x2, (float) y2, 0, 0);
+        return create((float) x1, (float) y1, (float) x2, (float) y2);
     }
 
     public static Box create(float x1, float y1, float x2, float y2) {
-        return new Box(x1, y1, x2, y2,0,0);
-    }
-    
-    public static Box create(float x1, float y1, float x2, float y2, float z1, float z2) {
-        return new Box(x1, y1, x2, y2, z1, z2);
+        // z size always one
+        return new Box(x1, y1, 0, x2, y2, 1);
     }
 
+    public static Box create(float x1, float y1, float z1, float x2, float y2, float z2) {
+        return new Box(x1, y1, z1, x2, y2, z2);
+    }
 
     @Override
     public boolean intersects(Box r) {
-        //TODO unit test
-        float xMaxLeft = Math.max(x1(), r.x1());
-        float xMinRight = Math.min(x2(), r.x2());
-        if (xMinRight<xMaxLeft) 
-            return false;
-        else {
-            float yMaxBottom = Math.max(y1(), r.y1());
-            float yMinTop = Math.min(y2(), r.y2());
-            if (yMinTop<yMaxBottom) 
-                return false;
-            else {
-                float zMax= Math.max(z1(), r.z1());
-                float zMin = Math.min(z2(), r.z2());
-                return (zMax >= zMin);
-            }
-        }
+        return !(x1 > r.x2 || x2 < r.x1 || y1 > r.y2 || y2 < r.y1 || z1 > r.z2 || z2 < r.z1);
     }
 
     @Override
     public double distance(Box r) {
-        //TODO
         if (intersects(r))
             return 0;
-        else {
-            Box mostLeft = x1 < r.x1 ? this : r;
-            Box mostRight = x1 > r.x1 ? this : r;
-            double xDifference = Math.max(0, mostLeft.x1 == mostRight.x1 ? 0 : mostRight.x1
-                    - mostLeft.x2);
 
-            Box upper = y1 < r.y1 ? this : r;
-            Box lower = y1 > r.y1 ? this : r;
+        double dx = 0.0;
+        if (x2 < r.x1)
+            dx = r.x1 - x2;
+        else if (x1 > r.x2)
+            dx = x1 - r.x2;
 
-            double yDifference = Math.max(0, upper.y1 == lower.y1 ? 0 : lower.y1 - upper.y2);
+        double dy = 0.0;
+        if (y2 < r.y1)
+            dy = r.y1 - y2;
+        else if (y1 > r.y2)
+            dy = y1 - r.y2;
 
-            return Math.sqrt(xDifference * xDifference + yDifference * yDifference);
-        }
+        double dz = 0.0;
+        if (z2 < r.z1)
+            dz = r.z1 - z2;
+        else if (z1 > r.z2)
+            dz = z1 - r.z2;
+
+        // if either is zero, the envelopes overlap either vertically or
+        // horizontally
+        if (dx == 0.0 && dz == 0)
+            return dy;
+        if (dy == 0.0 && dz == 0)
+            return dx;
+        if (dx == 0 && dy == 0)
+            return dz;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     @Override
@@ -147,17 +146,15 @@ public final class Box implements Geometry, HasGeometry {
     }
 
     public float intersectionVolume(Box r) {
-        //TODO volume
         if (!intersects(r))
             return 0;
         else
-            return create(Math.max(x1, r.x1), Math.max(y1, r.y1), Math.min(x2, r.x2),
-                    Math.min(y2, r.y2)).volume();
+            return create(Math.max(x1, r.x1), Math.max(y1, r.y1), Math.max(z1, r.z1),
+                    Math.min(x2, r.x2), Math.min(y2, r.y2), Math.min(z2, r.z2)).volume();
     }
 
     public float surfaceArea() {
-        //TODO change to surface area
-        return 2 * (x2 - x1) + 2 * (y2 - y1);
+        return 2 * ((x2 - x1) * (y2 - y1) + (y2 - y1) * (z2 - z1) + (x2 - x1) * (z2 - z1));
     }
 
     @Override
