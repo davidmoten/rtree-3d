@@ -121,12 +121,12 @@ public final class Box implements Geometry, HasGeometry {
         b.append(x1);
         b.append(", y1=");
         b.append(y1);
+        b.append(", z1=");
+        b.append(z1);
         b.append(", x2=");
         b.append(x2);
         b.append(", y2=");
         b.append(y2);
-        b.append(", z1=");
-        b.append(z1);
         b.append(", z2=");
         b.append(z2);
         b.append("]");
