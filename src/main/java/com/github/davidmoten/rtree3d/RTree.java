@@ -64,8 +64,8 @@ public final class RTree<T, S extends Geometry> {
         this.context = context;
     }
 
-    /**0
-     * Constructor.
+    /**
+     * 0 Constructor.
      * 
      * @param root
      *            the root node of the R-tree
@@ -681,8 +681,7 @@ public final class RTree<T, S extends Geometry> {
      *            max number of entries to return
      * @return nearest entries to maxCount, in ascending order of distance
      */
-    public Observable<Entry<T, S>> nearest(final Box r, final double maxDistance,
-            int maxCount) {
+    public Observable<Entry<T, S>> nearest(final Box r, final double maxDistance, int maxCount) {
         return search(r, maxDistance).lift(new OperatorBoundedPriorityQueue<Entry<T, S>>(maxCount,
                 Comparators.<T, S> ascendingDistance(r)));
     }
@@ -757,16 +756,16 @@ public final class RTree<T, S extends Geometry> {
                         else
                             return of(entry.geometry().mbr());
                     }
-                }).toBlocking().single().or(box(0, 0, 0, 0));
+                }).toBlocking().single().or(box(0, 0, 0, 0, 0, 0));
     }
 
     Optional<? extends Node<T, S>> root() {
         return root;
     }
-    
+
     /**
-     * If the RTree has no entries returns {@link Optional#absent}
-     * otherwise returns the minimum bounding rectangle of all entries in the RTree.
+     * If the RTree has no entries returns {@link Optional#absent} otherwise
+     * returns the minimum bounding rectangle of all entries in the RTree.
      * 
      * @return minimum bounding rectangle of all entries in RTree
      */

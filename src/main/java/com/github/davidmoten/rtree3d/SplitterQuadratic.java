@@ -55,11 +55,11 @@ public final class SplitterQuadratic implements Splitter {
         final Box mbr2 = Util.mbr(group2);
         final T item1 = getBestCandidateForGroup(remaining, group1, mbr1);
         final T item2 = getBestCandidateForGroup(remaining, group2, mbr2);
-        final boolean area1LessThanArea2 = item1.geometry().mbr().add(mbr1).volume() <= item2
+        final boolean volume1LessThanVolume2 = item1.geometry().mbr().add(mbr1).volume() <= item2
                 .geometry().mbr().add(mbr2).volume();
 
-        if (area1LessThanArea2 && (group2.size() + remaining.size() - 1 >= minGroupSize)
-                || !area1LessThanArea2 && (group1.size() + remaining.size() == minGroupSize)) {
+        if (volume1LessThanVolume2 && (group2.size() + remaining.size() - 1 >= minGroupSize)
+                || !volume1LessThanVolume2 && (group1.size() + remaining.size() == minGroupSize)) {
             group1.add(item1);
             remaining.remove(item1);
         } else {
@@ -72,11 +72,11 @@ public final class SplitterQuadratic implements Splitter {
     static <T extends HasGeometry> T getBestCandidateForGroup(List<T> list, List<T> group,
             Box groupMbr) {
         Optional<T> minEntry = absent();
-        Optional<Double> minArea = absent();
+        Optional<Double> minVolume = absent();
         for (final T entry : list) {
-            final double area = groupMbr.add(entry.geometry().mbr()).volume();
-            if (!minArea.isPresent() || area < minArea.get()) {
-                minArea = of(area);
+            final double volume = groupMbr.add(entry.geometry().mbr()).volume();
+            if (!minVolume.isPresent() || volume < minVolume.get()) {
+                minVolume = of(volume);
                 minEntry = of(entry);
             }
         }
@@ -88,16 +88,16 @@ public final class SplitterQuadratic implements Splitter {
         Optional<T> e1 = absent();
         Optional<T> e2 = absent();
         {
-            Optional<Double> maxArea = absent();
+            Optional<Double> maxVolume = absent();
             for (final T entry1 : items) {
                 for (final T entry2 : items) {
                     if (entry1 != entry2) {
-                        final double area = entry1.geometry().mbr().add(entry2.geometry().mbr())
+                        final double volume = entry1.geometry().mbr().add(entry2.geometry().mbr())
                                 .volume();
-                        if (!maxArea.isPresent() || area > maxArea.get()) {
+                        if (!maxVolume.isPresent() || volume > maxVolume.get()) {
                             e1 = of(entry1);
                             e2 = of(entry2);
-                            maxArea = of(area);
+                            maxVolume = of(volume);
                         }
                     }
                 }

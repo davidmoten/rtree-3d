@@ -54,6 +54,10 @@ public final class Point implements Geometry {
         return mbr.y1();
     }
 
+    public float z() {
+        return mbr.z1();
+    }
+
     @Override
     public int hashCode() {
         return Objects.hashCode(mbr);
