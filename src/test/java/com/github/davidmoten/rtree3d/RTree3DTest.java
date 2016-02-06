@@ -61,15 +61,15 @@ public class RTree3DTest {
                             long time = sdf.parse(items[0]).getTime();
                             float lat = Float.parseFloat(items[1]);
                             float lon = Float.parseFloat(items[2]);
-                            return Entry.entry(null, Point.create(lat, lon, time));
+                            return Entry.entry(null, Point.create(lat, lon, time / 1E10));
                         } catch (ParseException e) {
                             throw new RuntimeException(e);
                         }
 
                     }
                 });
-        RTree<Object, Point> tree = RTree.star().minChildren(10).maxChildren(50).create();
-        tree = tree.add(entries.take(500)).last().toBlocking().single();
+        RTree<Object, Point> tree = RTree.star().minChildren(3).maxChildren(8).create();
+        tree = tree.add(entries.take(10000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
         long t = System.currentTimeMillis();
@@ -78,17 +78,21 @@ public class RTree3DTest {
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
         PrintStream out = new PrintStream("target/out.txt");
-        print(tree.root().get(), out);
+        print(tree.root().get(), out, 1, 2);
         out.close();
     }
 
-    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out) {
+    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out, int depth,
+            int maxDepth) {
+        if (depth > maxDepth) {
+            return;
+        }
         if (node instanceof NonLeaf) {
             NonLeaf<Object, T> n = (NonLeaf<Object, T>) node;
             Box b = node.geometry().mbr();
             print(b, out);
             for (Node<Object, T> child : n.children()) {
-                print(child, out);
+                print(child, out, depth + 1, maxDepth);
             }
         } else if (node instanceof Leaf) {
             Leaf<Object, T> n = (Leaf<Object, T>) node;
