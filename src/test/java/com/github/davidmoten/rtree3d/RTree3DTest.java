@@ -68,8 +68,9 @@ public class RTree3DTest {
 
                     }
                 });
-        RTree<Object, Point> tree = RTree.star().minChildren(3).maxChildren(8).create();
-        tree = tree.add(entries.take(10000)).last().toBlocking().single();
+        int n = 4;
+        RTree<Object, Point> tree = RTree.star().minChildren((n - 1) / 2).maxChildren(n).create();
+        tree = tree.add(entries.take(100000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
         long t = System.currentTimeMillis();
@@ -78,7 +79,7 @@ public class RTree3DTest {
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
         PrintStream out = new PrintStream("target/out.txt");
-        print(tree.root().get(), out, 1, 2);
+        print(tree.root().get(), out, 1, 4);
         out.close();
     }
 
@@ -90,7 +91,8 @@ public class RTree3DTest {
         if (node instanceof NonLeaf) {
             NonLeaf<Object, T> n = (NonLeaf<Object, T>) node;
             Box b = node.geometry().mbr();
-            print(b, out);
+            if (depth > 1)
+                print(b, out);
             for (Node<Object, T> child : n.children()) {
                 print(child, out, depth + 1, maxDepth);
             }
