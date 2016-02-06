@@ -1,6 +1,7 @@
 package com.github.davidmoten.rtree3d;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
@@ -9,6 +10,7 @@ import java.util.zip.GZIPInputStream;
 import org.junit.Test;
 
 import com.github.davidmoten.rtree3d.geometry.Box;
+import com.github.davidmoten.rtree3d.geometry.Geometry;
 import com.github.davidmoten.rtree3d.geometry.Point;
 import com.github.davidmoten.rx.Strings;
 
@@ -66,7 +68,7 @@ public class RTree3DTest {
 
                     }
                 });
-        RTree<Object, Point> tree = RTree.star().minChildren(50).maxChildren(1000).create();
+        RTree<Object, Point> tree = RTree.star().minChildren(10).maxChildren(50).create();
         tree = tree.add(entries).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
@@ -75,7 +77,28 @@ public class RTree3DTest {
                 .toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
+        PrintStream out = new PrintStream("target/out.txt");
+        print(tree.root().get(), out);
+        out.close();
+    }
 
+    @SuppressWarnings("unchecked")
+    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out) {
+        if (node instanceof NonLeaf) {
+            NonLeaf<Object, T> n = (NonLeaf<Object, T>) node;
+            Box b = node.geometry().mbr();
+            print(b, out);
+            for (Node<Object, T> child : n.children()) {
+                print(child, out);
+            }
+        } else if (node instanceof Leaf) {
+            Leaf<Object, T> n = (Leaf<Object, T>) node;
+            print(n.geometry().mbr(), out);
+        }
+    }
+
+    private static void print(Box b, PrintStream out) {
+        out.format("%s,%s,%s,%s,%s,%s\n", b.x1(), b.y1(), b.z1(), b.x2(), b.y2(), b.z2());
     }
 
 }
