@@ -69,7 +69,7 @@ public class RTree3DTest {
                     }
                 });
         RTree<Object, Point> tree = RTree.star().minChildren(10).maxChildren(50).create();
-        tree = tree.add(entries).last().toBlocking().single();
+        tree = tree.add(entries.take(500)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
         long t = System.currentTimeMillis();
@@ -82,7 +82,6 @@ public class RTree3DTest {
         out.close();
     }
 
-    @SuppressWarnings("unchecked")
     private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out) {
         if (node instanceof NonLeaf) {
             NonLeaf<Object, T> n = (NonLeaf<Object, T>) node;
