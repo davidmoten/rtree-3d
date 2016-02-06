@@ -1,7 +1,7 @@
 #!/usr/bin/Rscript
 #X11(type="Xlib")
 library("plot3D")
-mat <- read.csv(file = "/home/dave/Development/ide/eclipse/workspace-4.4/rtree-3d/target/out.txt", header = FALSE)
+mat <- read.csv(file = "../../../target/out.txt", header = FALSE)
 png("../../../target/plot.png", height = 700, width =1000 )
 box3D(
 #  x0 = runif(3), y0 = runif(3),print z0 = runif(3),
