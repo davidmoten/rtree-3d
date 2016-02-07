@@ -1,5 +1,6 @@
 package com.github.davidmoten.rtree3d;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.ParseException;
@@ -122,13 +123,21 @@ public class RTree3DTest {
                 .toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
-        PrintStream out = new PrintStream("target/out.txt");
-
-        print(tree.root().get(), out, 4, 4);
-        out.close();
+        for (int i = 2; i<=5;i++) {
+            print(tree.root().get(), i);
+            System.out.println("depth file written " + i);
+        }
         System.out.println("finished");
     }
 
+    private static <T extends Geometry> void print(Node<Object, T> node,  int depth) throws FileNotFoundException {
+
+        PrintStream out = new PrintStream("target/out" + depth +".txt");
+        print(node, out, depth,depth);
+        out.close();
+
+    }
+    
     private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
             int depth) {
         print(node, out, depth, depth);
