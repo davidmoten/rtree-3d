@@ -1,7 +1,7 @@
 #!/usr/bin/Rscript
 #X11(type="Xlib")
 library("plot3D")
-for (i in 0:5 ) {
+for (i in 0:10 ) {
     mat <- read.csv(file = paste("../../../target/out",i,".txt", sep=""), header = FALSE)
 	png(paste("../../../target/plot",i,".png",sep=""), height = 700, width =1000 )
 	box3D(

@@ -122,7 +122,7 @@ public class RTree3DTest {
                 .toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 10; i++) {
             print(tree.root().get(), i);
             System.out.println("depth file written " + i);
         }
