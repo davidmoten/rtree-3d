@@ -98,8 +98,10 @@ public class RTree3DTest {
                         Math.max(info.maxZ, p.geometry().z()));
             }
         }).toBlocking().single();
+
         System.out.println(range);
         int n = 4;
+
         RTree<Object, Point> tree = RTree.star().minChildren((n - 1) / 2).maxChildren(n).create();
         tree = tree.add(entries.take(100000)).last().toBlocking().single();
         System.out.println(tree.size());
