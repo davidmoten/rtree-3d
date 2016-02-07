@@ -87,7 +87,7 @@ public class RTree3DTest {
 
         Info info = new Info(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
                 -Float.MAX_VALUE, -Float.MAX_VALUE);
-        Info range = entries.reduce(info, new Func2<Info, Entry<Object, Point>, Info>() {
+        final Info range = entries.reduce(info, new Func2<Info, Entry<Object, Point>, Info>() {
             @Override
             public Info call(Info info, Entry<Object, Point> p) {
                 return new Info(Math.min(info.minX, p.geometry().x()),
@@ -98,12 +98,22 @@ public class RTree3DTest {
                         Math.max(info.maxZ, p.geometry().z()));
             }
         }).toBlocking().single();
-
+        Observable<Entry<Object, Point>> normalized = entries
+                .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
+                    @Override
+                    public Entry<Object, Point> call(Entry<Object, Point> entry) {
+                        return Entry.entry(entry.value(),
+                                Point.create((entry.geometry().x() - range.minX)
+                                        / (range.maxX - range.minX),
+                                (entry.geometry().y() - range.minY) / (range.maxY - range.minY),
+                                (entry.geometry().z() - range.minZ) / (range.maxZ - range.minZ)));
+                    }
+                });
         System.out.println(range);
         int n = 4;
 
         RTree<Object, Point> tree = RTree.star().minChildren((n - 1) / 2).maxChildren(n).create();
-        tree = tree.add(entries.take(100000)).last().toBlocking().single();
+        tree = tree.add(normalized.take(100000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.asString());
         long t = System.currentTimeMillis();
@@ -113,7 +123,7 @@ public class RTree3DTest {
         System.out.println("search=" + count + " in " + t + "ms");
         PrintStream out = new PrintStream("target/out.txt");
 
-        print(tree.root().get(), out, 1, 3, 4);
+        print(tree.root().get(), out, 1, 2, 7);
         out.close();
     }
 
