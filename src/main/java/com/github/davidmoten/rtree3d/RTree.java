@@ -821,13 +821,19 @@ public final class RTree<T, S extends Geometry> {
      * @return a string representation of the RTree
      */
     public String asString() {
+        return asString(Integer.MAX_VALUE);
+    }
+
+    public String asString(int maxDepth) {
         if (!root.isPresent())
             return "";
         else
-            return asString(root.get(), "");
+            return asString(root.get(), "", 1, maxDepth);
     }
 
-    private String asString(Node<T, S> node, String margin) {
+    private String asString(Node<T, S> node, String margin, int depth, int maxDepth) {
+        if (depth > maxDepth)
+            return "";
         final String marginIncrement = "  ";
         StringBuilder s = new StringBuilder();
         if (node instanceof NonLeaf) {
@@ -836,7 +842,7 @@ public final class RTree<T, S extends Geometry> {
             s.append('\n');
             NonLeaf<T, S> n = (NonLeaf<T, S>) node;
             for (Node<T, S> child : n.children()) {
-                s.append(asString(child, margin + marginIncrement));
+                s.append(asString(child, margin + marginIncrement, depth + 1, maxDepth));
             }
         } else {
             Leaf<T, S> leaf = (Leaf<T, S>) node;

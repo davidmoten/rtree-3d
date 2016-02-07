@@ -112,10 +112,11 @@ public class RTree3DTest {
         System.out.println(range);
         int n = 4;
 
-        RTree<Object, Point> tree = RTree.star().minChildren((n - 1) / 2).maxChildren(n).create();
+        RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
         tree = tree.add(normalized.take(100000)).last().toBlocking().single();
         System.out.println(tree.size());
-        System.out.println(tree.asString());
+        System.out.println(tree.calculateDepth());
+        System.out.println(tree.asString(3));
         long t = System.currentTimeMillis();
         int count = tree.search(Box.create(39.0, 22.0, 0, 40.0, 23.0, 3.15684946E11)).count()
                 .toBlocking().single();
@@ -123,8 +124,19 @@ public class RTree3DTest {
         System.out.println("search=" + count + " in " + t + "ms");
         PrintStream out = new PrintStream("target/out.txt");
 
-        print(tree.root().get(), out, 1, 2, 7);
+        print(tree.root().get(), out, 4, 4);
         out.close();
+        System.out.println("finished");
+    }
+
+    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
+            int depth) {
+        print(node, out, depth, depth);
+    }
+
+    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
+            int minDepth, int maxDepth) {
+        print(node, out, 1, minDepth, maxDepth);
     }
 
     private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out, int depth,
@@ -140,7 +152,7 @@ public class RTree3DTest {
             for (Node<Object, T> child : n.children()) {
                 print(child, out, depth + 1, minDepth, maxDepth);
             }
-        } else if (node instanceof Leaf) {
+        } else if (node instanceof Leaf && depth >= minDepth) {
             Leaf<Object, T> n = (Leaf<Object, T>) node;
             print(n.geometry().mbr(), out);
         }
