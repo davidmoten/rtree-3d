@@ -104,10 +104,9 @@ public class RTree3DTest {
                     @Override
                     public Entry<Object, Point> call(Entry<Object, Point> entry) {
                         return Entry.entry(entry.value(),
-                                Point.create((entry.geometry().x() - range.minX)
-                                        / (range.maxX - range.minX),
-                                (entry.geometry().y() - range.minY) / (range.maxY - range.minY),
-                                (entry.geometry().z() - range.minZ) / (range.maxZ - range.minZ)));
+                                Point.create(range.normX(entry.geometry().x()),
+                                        range.normY(entry.geometry().y()),
+                                        range.normZ(entry.geometry().z())));
                     }
                 });
         System.out.println(range);
@@ -123,21 +122,22 @@ public class RTree3DTest {
                 .toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
-        for (int i = 2; i<=5;i++) {
+        for (int i = 2; i <= 5; i++) {
             print(tree.root().get(), i);
             System.out.println("depth file written " + i);
         }
         System.out.println("finished");
     }
 
-    private static <T extends Geometry> void print(Node<Object, T> node,  int depth) throws FileNotFoundException {
+    private static <T extends Geometry> void print(Node<Object, T> node, int depth)
+            throws FileNotFoundException {
 
-        PrintStream out = new PrintStream("target/out" + depth +".txt");
-        print(node, out, depth,depth);
+        PrintStream out = new PrintStream("target/out" + depth + ".txt");
+        print(node, out, depth, depth);
         out.close();
 
     }
-    
+
     private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
             int depth) {
         print(node, out, depth, depth);
@@ -186,6 +186,18 @@ public class RTree3DTest {
             this.maxX = maxX;
             this.maxY = maxY;
             this.maxZ = maxZ;
+        }
+
+        float normX(float x) {
+            return (x - minX) / (maxX - minX);
+        }
+
+        float normY(float y) {
+            return (y - minY) / (maxY - minY);
+        }
+
+        float normZ(float z) {
+            return (z - minZ) / (maxZ - minZ);
         }
 
         @Override
