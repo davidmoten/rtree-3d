@@ -10,14 +10,14 @@ import org.junit.Test;
 import com.github.davidmoten.rtree3d.Context;
 import com.github.davidmoten.rtree3d.Entry;
 import com.github.davidmoten.rtree3d.Leaf;
-import com.github.davidmoten.rtree3d.SelectorMinimalAreaIncrease;
+import com.github.davidmoten.rtree3d.SelectorMinimalVolumeIncrease;
 import com.github.davidmoten.rtree3d.SplitterQuadratic;
 import com.github.davidmoten.rtree3d.geometry.Box;
 import com.github.davidmoten.rtree3d.geometry.Geometries;
 
 public class LeafTest {
 
-    private static Context context = new Context(2, 4, new SelectorMinimalAreaIncrease(),
+    private static Context context = new Context(2, 4, new SelectorMinimalVolumeIncrease(),
             new SplitterQuadratic());
 
     @Test(expected = IllegalArgumentException.class)

@@ -198,7 +198,7 @@ public final class RTree<T, S extends Geometry> {
         private Optional<Integer> maxChildren = absent();
         private Optional<Integer> minChildren = absent();
         private Splitter splitter = new SplitterQuadratic();
-        private Selector selector = new SelectorMinimalAreaIncrease();
+        private Selector selector = new SelectorMinimalVolumeIncrease();
         private boolean star = false;
 
         private Builder() {
