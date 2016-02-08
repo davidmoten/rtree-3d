@@ -13,6 +13,9 @@ import org.junit.Test;
 import com.github.davidmoten.rtree3d.geometry.Box;
 import com.github.davidmoten.rtree3d.geometry.Geometry;
 import com.github.davidmoten.rtree3d.geometry.Point;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
 import com.github.davidmoten.rx.Strings;
 
 import rx.Observable;
@@ -127,6 +130,28 @@ public class RTree3DTest {
             System.out.println("depth file written " + i);
         }
         System.out.println("finished");
+    }
+
+    private Object toProtoNode(Node<Object, Point> node) {
+        Builder b = RTreeProtos.Node.newBuilder();
+        if (node instanceof Leaf) {
+            for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
+                Position p = Position.newBuilder().setLatitude(entry.geometry().x())
+                        .setLongitude(entry.geometry().y())
+                        .setTimeEpochMs(Math.round((double) entry.geometry().z())).build();
+                b.addPositions(p);
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                        .newBuilder().setXMin(node.geometry().mbr().x1())
+                        .setXMax(node.geometry().mbr().x2()).setYMin(node.geometry().mbr().y1())
+                        .setYMax(node.geometry().mbr().y2()).setZMin(node.geometry().mbr().z1())
+                        .setZMax(node.geometry().mbr().z2()).build();
+                b.setMbb(box);
+                return b.build();
+            }
+        } else {
+
+        }
+        return null;
     }
 
     private static <T extends Geometry> void print(Node<Object, T> node, int depth)
