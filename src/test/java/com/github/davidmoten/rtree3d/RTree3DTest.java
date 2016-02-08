@@ -1,5 +1,7 @@
 package com.github.davidmoten.rtree3d;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -7,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.junit.Test;
 
@@ -129,29 +132,46 @@ public class RTree3DTest {
             print(tree.root().get(), i);
             System.out.println("depth file written " + i);
         }
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
+                range);
+        byte[] bytes = pNode.toByteArray();
+        System.out.println("bytes in protobuf = " + bytes.length);
+        ByteArrayOutputStream b2 = new ByteArrayOutputStream();
+        GZIPOutputStream g = new GZIPOutputStream(b2);
+        g.write(bytes);
+        g.close();
+        System.out.println("zipped bytes = "+ b2.size());
+        
+        System.out.println(1000000.0/b2.size() * tree.size() + " positions = 1MB gzipped");
         System.out.println("finished");
     }
 
-    private Object toProtoNode(Node<Object, Point> node) {
+    private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
+            Node<Object, Point> node, Info range) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
-                Position p = Position.newBuilder().setLatitude(entry.geometry().x())
-                        .setLongitude(entry.geometry().y())
-                        .setTimeEpochMs(Math.round((double) entry.geometry().z())).build();
+                Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
+                        .setLatitude(range.invX(entry.geometry().x()))
+                        .setLongitude(range.invY(entry.geometry().y()))
+                        .setTimeEpochMs(Math.round((double) range.invZ(entry.geometry().z())))
+                        .build();
                 b.addPositions(p);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                        .newBuilder().setXMin(node.geometry().mbr().x1())
-                        .setXMax(node.geometry().mbr().x2()).setYMin(node.geometry().mbr().y1())
-                        .setYMax(node.geometry().mbr().y2()).setZMin(node.geometry().mbr().z1())
-                        .setZMax(node.geometry().mbr().z2()).build();
-                b.setMbb(box);
-                return b.build();
             }
         } else {
-
+            // is NonLeaf
+            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
+            for (Node<Object, Point> child : n.children()) {
+                b.addChildren(toProtoNode(child, range));
+            }
         }
-        return null;
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                .newBuilder().setXMin(node.geometry().mbr().x1())
+                .setXMax(node.geometry().mbr().x2()).setYMin(node.geometry().mbr().y1())
+                .setYMax(node.geometry().mbr().y2()).setZMin(node.geometry().mbr().z1())
+                .setZMax(node.geometry().mbr().z2()).build();
+        b.setMbb(box);
+        return b.build();
     }
 
     private static <T extends Geometry> void print(Node<Object, T> node, int depth)
@@ -223,6 +243,18 @@ public class RTree3DTest {
 
         float normZ(float z) {
             return (z - minZ) / (maxZ - minZ);
+        }
+
+        float invX(float x) {
+            return x * (maxX - minX) + minX;
+        }
+
+        float invY(float y) {
+            return y * (maxY - minY) + minY;
+        }
+
+        float invZ(float z) {
+            return z * (maxZ - minZ) + minZ;
         }
 
         @Override
