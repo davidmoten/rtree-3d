@@ -2,8 +2,23 @@ syntax = "proto3";
 
 package rtree3d;
 
-option java_package = "au.gov.amsa.cts2.proto";
-option java_outer_classname = "PositionProtos";
+option java_package = "com.github.davidmoten.rtree3d.proto";
+option java_outer_classname = "RTreeProtos";
+
+message Node {
+    Box mbb = 1;
+    repeated Node children = 2;
+    repeated Position positions = 3;
+}
+
+message Box {
+    float xMin = 1;
+    float xMax = 2;
+    float yMin = 3;
+    float yMax = 4;
+    float zMin = 5;
+    float zMax = 6;
+}
 
 message Position {
   int32 identifierType = 1;
