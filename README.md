@@ -5,7 +5,7 @@ Three dimensional R-Tree in java motivated by spatio-temporal queries. Nodes wou
 
 Status: *pre-alpha*
 
-Progress is being made on this project. I've copied my 2D [rtree](https://github.com/davidmoten/rtree) implementation and beefed it up for 3D. 
+Progress is being made on this project. I've copied my [rtree 2D implementation](https://github.com/davidmoten/rtree)and beefed it up for 3D. 
 
 * expanded the R* `Selector` and `Splitter` implementations to handle 3 dimensions
 * normalized coordinates so they range from 0..1
