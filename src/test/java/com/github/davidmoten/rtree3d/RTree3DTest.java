@@ -141,28 +141,36 @@ public class RTree3DTest {
         GZIPOutputStream g = new GZIPOutputStream(b2);
         g.write(bytes);
         g.close();
-        System.out.println("zipped bytes = "+ b2.size());
-        
-        System.out.println(1000000.0/b2.size() * tree.size() + " positions = 1MB gzipped");
-        
-        //deserialize
-        
+        System.out.println("zipped bytes = " + b2.size());
+
+        System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
+
+        // deserialize
+
         System.out.println("finished");
     }
-    
-    private Node<Object,Point> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+
+    private Node<Object, Point> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
+            Context context) {
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b = node.getMbb();
-        if (node.getChildrenCount()>0) {
-            //is non-leaf
-            Box box = Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(), b.getZMax());
-            List<Node<Object,Point>> children = new ArrayList<Node<Object, Point>>();
-            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n:node.getChildrenList()) {
+        Box box = Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(),
+                b.getZMax());
+        if (node.getChildrenCount() > 0) {
+            // is non-leaf
+            List<Node<Object, Point>> children = new ArrayList<Node<Object, Point>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
                 children.add(toNode(n, context));
             }
-            NonLeaf<Object, Point> n = new NonLeaf<Object, Point> (children, box, context );
+            NonLeaf<Object, Point> n = new NonLeaf<Object, Point>(children, box, context);
             return n;
         } else {
-            return null;
+            // is leaf
+            List<Entry<Object, Point>> entries = new ArrayList<Entry<Object, Point>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node.getPositionsList()) {
+                entries.add(Entry.entry((Object) p, Point.create(p.getLatitude(), p.getLongitude())));
+            }
+            Leaf<Object, Point> n = new Leaf<Object, Point>(entries, box, context);
+            return n;
         }
     }
 

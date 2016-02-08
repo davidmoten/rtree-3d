@@ -21,9 +21,13 @@ final class Leaf<T, S extends Geometry> implements Node<T, S> {
     private final Context context;
 
     Leaf(List<Entry<T, S>> entries, Context context) {
+        this(entries, Util.mbr(entries), context);
+    }
+    
+    Leaf(List<Entry<T, S>> entries, Box mbr, Context context) {
         this.entries = entries;
         this.context = context;
-        this.mbr = Util.mbr(entries);
+        this.mbr = mbr;
     }
 
     @Override
