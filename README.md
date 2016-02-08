@@ -7,7 +7,9 @@ Status: *pre-alpha*
 
 Progress is being made on this project. I've copied my 2D [rtree](https://github.com/davidmoten/rtree) implementation and beefed it up for 3D. 
 
-* expanded the R*Star   
+* expanded the R* `Selector` and `Splitter` implementations to handle 3 dimensions
+* normalize coordinates so they range from 0..1
+* added [R language code](src/main/r/source.r) to produce PNG visualizations of tree structure (below) 
 
 Depth 0:
 <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot0.png"/>
