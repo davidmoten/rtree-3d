@@ -1,8 +1,15 @@
 #!/usr/bin/Rscript
 #X11(type="Xlib")
+## ensure plot3D available
+pkgs <- c("plot3D")
+install.these <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if (length(install.these) > 0) install.packages(install.these)
+
 library("plot3D")
-for (i in 0:10 ) {
-    mat <- read.csv(file = paste("../../../target/out",i,".txt", sep=""), header = FALSE)
+for (i in 0:9) {
+    filename = paste("../../../target/out",i,".txt", sep="")
+    print(paste("reading", filename))
+    mat <- read.csv(file = filename, header = FALSE)
     png(paste("../../../target/plot",i,".png",sep=""), height = 700, width =1000 )
     box3D(
       x0 = mat[,1], y0 = mat[,2], z0=mat[,3],

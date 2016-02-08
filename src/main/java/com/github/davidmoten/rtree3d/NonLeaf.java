@@ -22,10 +22,14 @@ final class NonLeaf<T, S extends Geometry> implements Node<T, S> {
     private final Context context;
 
     NonLeaf(List<? extends Node<T, S>> children, Context context) {
+        this(children, Util.mbr(children), context);
+    }
+    
+    NonLeaf(List<? extends Node<T, S>> children, Box mbr, Context context) {
         Preconditions.checkArgument(!children.isEmpty());
         this.context = context;
         this.children = children;
-        this.mbr = Util.mbr(children);
+        this.mbr = mbr;
     }
 
     @Override

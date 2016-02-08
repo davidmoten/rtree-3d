@@ -1,12 +1,13 @@
 package com.github.davidmoten.rtree3d;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -143,7 +144,26 @@ public class RTree3DTest {
         System.out.println("zipped bytes = "+ b2.size());
         
         System.out.println(1000000.0/b2.size() * tree.size() + " positions = 1MB gzipped");
+        
+        //deserialize
+        
         System.out.println("finished");
+    }
+    
+    private Node<Object,Point> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b = node.getMbb();
+        if (node.getChildrenCount()>0) {
+            //is non-leaf
+            Box box = Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(), b.getZMax());
+            List<Node<Object,Point>> children = new ArrayList<Node<Object, Point>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n:node.getChildrenList()) {
+                children.add(toNode(n, context));
+            }
+            NonLeaf<Object, Point> n = new NonLeaf<Object, Point> (children, box, context );
+            return n;
+        } else {
+            return null;
+        }
     }
 
     private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
