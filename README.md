@@ -14,7 +14,7 @@ Progress is being made on this project. I've copied my 2D [rtree](https://github
 Greek Earthquake data
 -----------------------
 Given the 38,377 data points of greek earthquakes (lat, long, time), the data is scanned to establish the ranges for each coordinate then 
-normalized to a [0,1] range. The points are added to an R*-tree (`RTree.star().minChildren(2).maxChildren(4).create()`). Visualization 
+normalized to a [0,1] range. The points are added to an R*-tree with `minChildren`=2 and `maxChildren`=4. Visualization 
 of the bounding boxes at nodes by depth is below.
 
 Depth 0:
