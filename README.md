@@ -11,6 +11,12 @@ Progress is being made on this project. I've copied my 2D [rtree](https://github
 * normalized coordinates so they range from 0..1
 * added [R language code](src/main/r/source.r) to produce PNG visualizations of tree structure (below) 
 
+Greek Earthquake data
+-----------------------
+Given the 38,377 data points of greek earthquakes (lat, long, time), the data is scanned to establish the ranges for each coordinate then 
+normalized to a [0,1] range. The points are added to an R*-tree (`RTree.star().minChildren(2).maxChildren(4).create()`). Visualization 
+of the bounding boxes at nodes by depth is below.
+
 Depth 0:
 <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot0.png"/>
 <br/>
