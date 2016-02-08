@@ -2,6 +2,7 @@
 3D R-Tree in java.
 
 Three dimensional R-Tree in java motivated by spatio-temporal queries. Nodes would be serialized to disk or network storage.  
+Particularly interested in large static datasets.
 
 Status: *pre-alpha*
 
