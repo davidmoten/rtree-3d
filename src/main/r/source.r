@@ -1,10 +1,6 @@
 #!/usr/bin/Rscript
 #X11(type="Xlib")
-## ensure plot3D available
-pkgs <- c("plot3D")
-install.these <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-if (length(install.these) > 0) install.packages(install.these)
-
+#install.packages("plot3D")
 library("plot3D")
 for (i in 0:9) {
     filename = paste("../../../target/out",i,".txt", sep="")
