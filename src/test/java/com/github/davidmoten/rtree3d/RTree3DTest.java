@@ -103,27 +103,16 @@ public class RTree3DTest {
                     }
                 });
 
-        if ("true".equals(System.getProperty("fixes"))) {
+        if (System.getProperty("fixes") != null) {
             entries = BinaryFixes
-                    .from(new File("/home/dave/2014-01-01-binary-fixes-with-mmsi"), true,
-                            BinaryFixesFormat.WITH_MMSI)
+                    .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
                     .map(new Func1<Fix, Entry<Object, Point>>() {
                         @Override
                         public Entry<Object, Point> call(Fix x) {
                             return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
                         }
-                    }).take(1000000);
+                    }).take(10000000);
         }
-
-        // shuffle entries
-        entries = entries.toList().flatMapIterable(
-                new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
-                    @Override
-                    public Iterable<Entry<Object, Point>> call(List<Entry<Object, Point>> list) {
-                        Collections.shuffle(list);
-                        return list;
-                    }
-                });
 
         Range info = new Range(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
                 -Float.MAX_VALUE, -Float.MAX_VALUE);
@@ -138,6 +127,19 @@ public class RTree3DTest {
                         Math.max(info.maxZ, p.geometry().z()));
             }
         }).toBlocking().single();
+
+        // shuffle entries
+        entries = entries.toList().flatMapIterable(
+                new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
+                    @Override
+                    public Iterable<Entry<Object, Point>> call(List<Entry<Object, Point>> list) {
+                        System.out.println("shuffling");
+                        Collections.shuffle(list);
+                        System.out.println("shuffled");
+                        return list;
+                    }
+                });
+
         Observable<Entry<Object, Point>> normalized = entries
                 .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
                     @Override
