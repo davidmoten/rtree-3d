@@ -17,6 +17,15 @@ Progress is being made on this project. I've copied my [rtree 2D implementation]
 * added [R language code](src/main/r/source.r) to produce PNG visualizations of tree structure (below) 
 
 If the coordinates are normalized to the [0..1] range then the data structure doesn't favour one dimension over another. To favour time over position for instance just scale the time value down by a constant (experiment with your data!).
+Note also that if your entries are added to the R-tree in say ascending time order then the resultant R-tree may be affected negatively in terms of the efficiency of its structure. A useful strategy to avoid this is to shuffle the entries before adding. For example:
+
+```java
+RTree<Object, Point> tree = 
+  tree.add(
+    entries
+      .toList()
+      .flatMapIterable(list -> {Collections.shuffle(list);return list}));
+```
 
 Visualization
 -----------------------
