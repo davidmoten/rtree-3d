@@ -18,7 +18,7 @@ Progress is being made on this project. I've copied my [rtree 2D implementation]
 
 If the coordinates are normalized to the [0..1] range then the data structure doesn't favour one dimension over another. To favour time over position for instance just scale the time value down by a constant (experiment with your data!).
 
-Test visualization
+Visualization
 -----------------------
 Given the 38,377 data points of greek earthquakes (lat, long, time) from 1964 to 2000, the data is scanned to establish the ranges for each coordinate then normalized to a [0,1] range. The points are added to an R-tree with `minChildren`=2 and `maxChildren`=4 using either the R* heuristics or standard R-tree heuristics. Visualization of the bounding boxes at nodes by method and depth is below.
 
@@ -36,5 +36,14 @@ Generated with this [commit](tree/83c760b3ee7f9fb7d64f581554424ee7ab88cac7).
 | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot7-q.png" /> | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot7.png" /> |
 | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot8-q.png" /> | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot8.png" /> |
 | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot9-q.png" /> | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot9.png" /> |
+
+Commands to generate:
+
+```bash
+mvn test
+cd src/test/r
+./source.r
+```
+Images are generated in `target` directory (`plot*.png`).
 
 
