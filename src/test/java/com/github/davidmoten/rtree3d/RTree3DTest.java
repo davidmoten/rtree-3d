@@ -119,7 +119,7 @@ public class RTree3DTest {
         System.out.println(range);
         int n = 4;
 
-        RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
+        RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
         tree = tree.add(normalized.take(100000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
@@ -166,8 +166,10 @@ public class RTree3DTest {
         } else {
             // is leaf
             List<Entry<Object, Point>> entries = new ArrayList<Entry<Object, Point>>();
-            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node.getPositionsList()) {
-                entries.add(Entry.entry((Object) p, Point.create(p.getLatitude(), p.getLongitude())));
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node
+                    .getPositionsList()) {
+                entries.add(
+                        Entry.entry((Object) p, Point.create(p.getLatitude(), p.getLongitude())));
             }
             Leaf<Object, Point> n = new Leaf<Object, Point>(entries, box, context);
             return n;
