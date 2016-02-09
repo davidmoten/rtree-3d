@@ -11,6 +11,7 @@ import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -111,7 +112,15 @@ public class RTree3DTest {
                         public Entry<Object, Point> call(Fix x) {
                             return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
                         }
-                    });
+                    }).take(1000000).toList().flatMapIterable(
+                            new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
+                                @Override
+                                public Iterable<Entry<Object, Point>> call(
+                                        List<Entry<Object, Point>> list) {
+                                    Collections.shuffle(list);
+                                    return list;
+                                }
+                            });
         }
 
         Range info = new Range(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
@@ -141,7 +150,7 @@ public class RTree3DTest {
         int n = 4;
 
         RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
-        tree = tree.add(normalized.take(1000000)).last().toBlocking().single();
+        tree = tree.add(normalized).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
         System.out.println(tree.asString(3));

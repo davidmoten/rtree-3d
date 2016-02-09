@@ -2,7 +2,7 @@
 #X11(type="Xlib")
 #install.packages("plot3D")
 library("plot3D")
-for (i in 0:9) {
+for (i in 0:10) {
     filename = paste("../../../target/out",i,".txt", sep="")
     print(paste("reading", filename))
     mat <- read.csv(file = filename, header = FALSE)
