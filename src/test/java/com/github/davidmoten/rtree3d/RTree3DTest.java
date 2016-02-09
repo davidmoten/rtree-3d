@@ -141,7 +141,7 @@ public class RTree3DTest {
         int n = 4;
 
         RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
-        tree = tree.add(normalized.take(10000000)).last().toBlocking().single();
+        tree = tree.add(normalized.take(1000000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
         System.out.println(tree.asString(3));
