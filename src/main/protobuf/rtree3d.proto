@@ -7,8 +7,10 @@ option java_outer_classname = "RTreeProtos";
 
 message Node {
     Box mbb = 1;
+    //these lists mutually exclusive (only one should appear)
     repeated Node children = 2;
     repeated Position positions = 3;
+    repeated SubTreeId subTreeIds = 4;
 }
 
 message Box {
@@ -32,6 +34,11 @@ message Position {
   int32 headingDegrees = 7; // 0 <= x < 360
   int32 courseDegrees = 8; // 0 <= x < 360
   float speedKnots = 9; // -1 = not present
+}
+
+message SubTreeId {
+    string id = 1;
+    Box mbb = 2;
 }
 
 message IntegerIdentifier {

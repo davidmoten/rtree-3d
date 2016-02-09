@@ -1,14 +1,19 @@
 package com.github.davidmoten.rtree3d;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -20,6 +25,7 @@ import com.github.davidmoten.rtree3d.geometry.Point;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
 
 import rx.Observable;
@@ -145,35 +151,51 @@ public class RTree3DTest {
 
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
 
-        // deserialize
+        File dir = new File("target/tree");
+        dir.mkdir();
+        for (File f : dir.listFiles())
+            f.delete();
+
+        // now create a node with the top portion of the r-tree down to a depth
+        // with a number of total nodes less than a given maximum (but close
+        // to). It's leaf nodes are uuids that correspond to serialized files in
+        // dir for the rest of the r-tree at that leaf.
 
         System.out.println("finished");
     }
 
-    private Node<Object, Point> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
+    private Node<Object, Geometry> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
             Context context) {
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b = node.getMbb();
-        Box box = Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(),
-                b.getZMax());
-        if (node.getChildrenCount() > 0) {
+        Box box = createBox(node.getMbb());
+        if (node.getSubTreeIdsCount() > 0) {
+            // is leaf and has sub tree ids
+            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
+            for (SubTreeId id : node.getSubTreeIdsList()) {
+                entries.add(Entry.entry((Object) id, (Geometry) createBox(id.getMbb())));
+            }
+            return new Leaf<Object, Geometry>(entries, box, context);
+        } else if (node.getChildrenCount() > 0) {
             // is non-leaf
-            List<Node<Object, Point>> children = new ArrayList<Node<Object, Point>>();
+            List<Node<Object, Geometry>> children = new ArrayList<Node<Object, Geometry>>();
             for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
                 children.add(toNode(n, context));
             }
-            NonLeaf<Object, Point> n = new NonLeaf<Object, Point>(children, box, context);
-            return n;
+            return new NonLeaf<Object, Geometry>(children, box, context);
         } else {
             // is leaf
-            List<Entry<Object, Point>> entries = new ArrayList<Entry<Object, Point>>();
+            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
             for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node
                     .getPositionsList()) {
-                entries.add(
-                        Entry.entry((Object) p, Point.create(p.getLatitude(), p.getLongitude())));
+                entries.add(Entry.entry((Object) p,
+                        (Geometry) Point.create(p.getLatitude(), p.getLongitude())));
             }
-            Leaf<Object, Point> n = new Leaf<Object, Point>(entries, box, context);
-            return n;
+            return new Leaf<Object, Geometry>(entries, box, context);
         }
+    }
+
+    private Box createBox(com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b) {
+        return Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(),
+                b.getZMax());
     }
 
     private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
@@ -204,6 +226,58 @@ public class RTree3DTest {
         return b.build();
     }
 
+    private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
+            Node<Object, Point> node, Info range, int depth, int maxDepth, File dir) {
+        Builder b = RTreeProtos.Node.newBuilder();
+        if (depth <= maxDepth && node instanceof Leaf) {
+            for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
+                Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
+                        .setLatitude(range.invX(entry.geometry().x()))
+                        .setLongitude(range.invY(entry.geometry().y()))
+                        .setTimeEpochMs(Math.round((double) range.invZ(entry.geometry().z())))
+                        .build();
+                b.addPositions(p);
+            }
+        } else if (depth < maxDepth && node instanceof NonLeaf) {
+            // is NonLeaf
+            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
+            for (Node<Object, Point> child : n.children()) {
+                b.addChildren(toProtoNodeSplit(child, range, depth + 1, maxDepth, dir));
+            }
+        } else if (depth == maxDepth && node instanceof NonLeaf) {
+            // is NonLeaf
+            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
+            for (Node<Object, Point> child : n.children()) {
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Node proto = toProtoNode(child,
+                        range);
+                String id = UUID.randomUUID().toString().replace("-", "");
+                File file = new File(dir, id);
+                try {
+                    // TODO final close
+                    OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                    out.write(proto.toByteArray());
+                    out.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                b.addSubTreeIds(SubTreeId.newBuilder().setId(id)
+                        .setMbb(createProtoBox(child.geometry().mbr())));
+            }
+        } else {
+            throw new RuntimeException("unexpected");
+        }
+
+        b.setMbb(createProtoBox(node.geometry().mbr()));
+        return b.build();
+
+    }
+
+    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Box createProtoBox(Box box) {
+        return com.github.davidmoten.rtree3d.proto.RTreeProtos.Box.newBuilder().setXMin(box.x1())
+                .setXMax(box.x2()).setYMin(box.y1()).setYMax(box.y2()).setZMin(box.z1())
+                .setZMax(box.z2()).build();
+    }
+
     private static <T extends Geometry> void print(Node<Object, T> node, int depth)
             throws FileNotFoundException {
 
@@ -211,11 +285,6 @@ public class RTree3DTest {
         print(node, out, depth, depth);
         out.close();
 
-    }
-
-    private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
-            int depth) {
-        print(node, out, depth, depth);
     }
 
     private static <T extends Geometry> void print(Node<Object, T> node, PrintStream out,
