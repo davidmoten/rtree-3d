@@ -2,28 +2,25 @@
 [![Travis CI](https://travis-ci.org/davidmoten/rtree-3d.svg)](https://travis-ci.org/davidmoten/rtree-3d)<br/>
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rtree-3d/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rtree-3d)<br/>
 
-3D R-Tree in java.
-
-Three dimensional R-Tree in java motivated by spatio-temporal queries. Nodes would be serialized to disk or network storage.  
-Particularly interested in large static datasets.
+Three dimensional R-Tree in java.
+* motivated by spatio-temporal queries
+* nodes can be serialized to disk or network storage.  
+* particularly interested in serializing large static datasets into a top tree and many sub-tree files that might be accessed over medium latency and medium bandwidth io (e.g. using AWS S3 from EC2).
 
 Status: *pre-alpha*
 
 Progress is being made on this project. I've copied my [rtree 2D implementation](https://github.com/davidmoten/rtree) and beefed it up for 3D. 
 
 * expanded the R* `Selector` and `Splitter` implementations to handle 3 dimensions
-* enhance Quadratic `Selector` and `Splitter` implementations to handle 3 dimensions
+* enhanced Quadratic `Selector` and `Splitter` implementations to handle 3 dimensions
 * normalized coordinates so they range from 0..1
 * added [R language code](src/main/r/source.r) to produce PNG visualizations of tree structure (below) 
 
-If the coordinates are normalized to the [0..1] range then the data structure doesn't favour one dimension over another. To favour time over position for instance
- just scale the time value down by a constant (experiment with your data!).
+If the coordinates are normalized to the [0..1] range then the data structure doesn't favour one dimension over another. To favour time over position for instance just scale the time value down by a constant (experiment with your data!).
 
 Greek Earthquake data
 -----------------------
-Given the 38,377 data points of greek earthquakes (lat, long, time), the data is scanned to establish the ranges for each coordinate then 
-normalized to a [0,1] range. The points are added to an R*-tree with `minChildren`=2 and `maxChildren`=4. Visualization 
-of the bounding boxes at nodes by depth is below.
+Given the 38,377 data points of greek earthquakes (lat, long, time), the data is scanned to establish the ranges for each coordinate then normalized to a [0,1] range. The points are added to an R-tree with `minChildren`=2 and `maxChildren`=4 using either the R* heuristics or standard R-tree heuristics. Visualization of the bounding boxes at nodes by method and depth is below.
 
 Generated with this [commit](tree/83c760b3ee7f9fb7d64f581554424ee7ab88cac7).
 
