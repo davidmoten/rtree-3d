@@ -189,7 +189,7 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
 
-        writeNodeAsSplitProtos(tree.root().get(), range, 5, dir);
+        writeNodeAsSplitProtos(tree.root().get(), range, 3, dir);
 
         System.out.println("finished");
     }
