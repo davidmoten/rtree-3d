@@ -102,7 +102,7 @@ public class RTree3DTest {
                     }
                 });
 
-        if (true) {
+        if ("true".equals(System.getProperty("fixes"))) {
             entries = BinaryFixes
                     .from(new File("/home/dave/2014-01-01-binary-fixes-with-mmsi"), true,
                             BinaryFixesFormat.WITH_MMSI)
@@ -140,7 +140,7 @@ public class RTree3DTest {
         System.out.println(range);
         int n = 4;
 
-        RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
+        RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
         tree = tree.add(normalized.take(1000000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
