@@ -161,44 +161,17 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
 
+        writeNodeAsSplitProtos(tree.root().get(), range, 5, dir);
+
         System.out.println("finished");
     }
 
-    private Node<Object, Geometry> toNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
-            Context context) {
-        Box box = createBox(node.getMbb());
-        if (node.getSubTreeIdsCount() > 0) {
-            // is leaf and has sub tree ids
-            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
-            for (SubTreeId id : node.getSubTreeIdsList()) {
-                entries.add(Entry.entry((Object) id, (Geometry) createBox(id.getMbb())));
-            }
-            return new Leaf<Object, Geometry>(entries, box, context);
-        } else if (node.getChildrenCount() > 0) {
-            // is non-leaf
-            List<Node<Object, Geometry>> children = new ArrayList<Node<Object, Geometry>>();
-            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
-                children.add(toNode(n, context));
-            }
-            return new NonLeaf<Object, Geometry>(children, box, context);
-        } else {
-            // is leaf
-            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
-            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node
-                    .getPositionsList()) {
-                entries.add(Entry.entry((Object) p,
-                        (Geometry) Point.create(p.getLatitude(), p.getLongitude())));
-            }
-            return new Leaf<Object, Geometry>(entries, box, context);
-        }
-    }
-
-    private Box createBox(com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b) {
+    private static Box createBox(com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b) {
         return Box.create(b.getXMin(), b.getYMin(), b.getZMin(), b.getXMax(), b.getYMax(),
                 b.getZMax());
     }
 
-    private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
+    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
             Node<Object, Point> node, Info range) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
@@ -226,7 +199,30 @@ public class RTree3DTest {
         return b.build();
     }
 
-    private com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
+    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Info range, int maxDepth,
+            File dir) {
+        writeBytesToFile(toProtoNodeSplit(node, range, 0, maxDepth, dir).toByteArray(),
+                new File(dir, "top"), true);
+    }
+
+    private static void writeBytesToFile(byte[] bytes, File file, boolean zip) {
+        OutputStream out = null;
+        try {
+            out = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file)));
+            out.write(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (out != null)
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+        }
+    }
+
+    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
             Node<Object, Point> node, Info range, int depth, int maxDepth, File dir) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
@@ -252,14 +248,7 @@ public class RTree3DTest {
                         range);
                 String id = UUID.randomUUID().toString().replace("-", "");
                 File file = new File(dir, id);
-                try {
-                    // TODO final close
-                    OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                    out.write(proto.toByteArray());
-                    out.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                writeBytesToFile(proto.toByteArray(), file, true);
                 b.addSubTreeIds(SubTreeId.newBuilder().setId(id)
                         .setMbb(createProtoBox(child.geometry().mbr())));
             }
@@ -276,6 +265,35 @@ public class RTree3DTest {
         return com.github.davidmoten.rtree3d.proto.RTreeProtos.Box.newBuilder().setXMin(box.x1())
                 .setXMax(box.x2()).setYMin(box.y1()).setYMax(box.y2()).setZMin(box.z1())
                 .setZMax(box.z2()).build();
+    }
+
+    private static Node<Object, Geometry> toNode(
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+        Box box = createBox(node.getMbb());
+        if (node.getSubTreeIdsCount() > 0) {
+            // is leaf and has sub tree ids
+            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
+            for (SubTreeId id : node.getSubTreeIdsList()) {
+                entries.add(Entry.entry((Object) id, (Geometry) createBox(id.getMbb())));
+            }
+            return new Leaf<Object, Geometry>(entries, box, context);
+        } else if (node.getChildrenCount() > 0) {
+            // is non-leaf
+            List<Node<Object, Geometry>> children = new ArrayList<Node<Object, Geometry>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
+                children.add(toNode(n, context));
+            }
+            return new NonLeaf<Object, Geometry>(children, box, context);
+        } else {
+            // is leaf
+            List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node
+                    .getPositionsList()) {
+                entries.add(Entry.entry((Object) p,
+                        (Geometry) Point.create(p.getLatitude(), p.getLongitude())));
+            }
+            return new Leaf<Object, Geometry>(entries, box, context);
+        }
     }
 
     private static <T extends Geometry> void print(Node<Object, T> node, int depth)
