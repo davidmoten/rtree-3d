@@ -34,7 +34,7 @@ public class CircleTest {
     public void testMbr() {
         Circle circle = circle(1, 2, 3);
         Box r = Geometries.box(-2, -1, 4, 5);
-        assertEquals(r, circle.mbr());
+        assertEquals(r, circle.mbb());
     }
 
     @Test

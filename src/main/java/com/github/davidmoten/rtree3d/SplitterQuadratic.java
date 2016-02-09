@@ -55,8 +55,8 @@ public final class SplitterQuadratic implements Splitter {
         final Box mbr2 = Util.mbr(group2);
         final T item1 = getBestCandidateForGroup(remaining, group1, mbr1);
         final T item2 = getBestCandidateForGroup(remaining, group2, mbr2);
-        final boolean volume1LessThanVolume2 = item1.geometry().mbr().add(mbr1).volume() <= item2
-                .geometry().mbr().add(mbr2).volume();
+        final boolean volume1LessThanVolume2 = item1.geometry().mbb().add(mbr1).volume() <= item2
+                .geometry().mbb().add(mbr2).volume();
 
         if (volume1LessThanVolume2 && (group2.size() + remaining.size() - 1 >= minGroupSize)
                 || !volume1LessThanVolume2 && (group1.size() + remaining.size() == minGroupSize)) {
@@ -74,7 +74,7 @@ public final class SplitterQuadratic implements Splitter {
         Optional<T> minEntry = absent();
         Optional<Double> minVolume = absent();
         for (final T entry : list) {
-            final double volume = groupMbr.add(entry.geometry().mbr()).volume();
+            final double volume = groupMbr.add(entry.geometry().mbb()).volume();
             if (!minVolume.isPresent() || volume < minVolume.get()) {
                 minVolume = of(volume);
                 minEntry = of(entry);
@@ -92,7 +92,7 @@ public final class SplitterQuadratic implements Splitter {
             for (final T entry1 : items) {
                 for (final T entry2 : items) {
                     if (entry1 != entry2) {
-                        final double volume = entry1.geometry().mbr().add(entry2.geometry().mbr())
+                        final double volume = entry1.geometry().mbb().add(entry2.geometry().mbb())
                                 .volume();
                         if (!maxVolume.isPresent() || volume > maxVolume.get()) {
                             e1 = of(entry1);

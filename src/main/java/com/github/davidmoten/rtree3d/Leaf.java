@@ -43,7 +43,7 @@ final class Leaf<T, S extends Geometry> implements Node<T, S> {
     public void search(Func1<? super Geometry, Boolean> condition,
             Subscriber<? super Entry<T, S>> subscriber) {
 
-        if (!condition.call(this.geometry().mbr()))
+        if (!condition.call(this.geometry().mbb()))
             return;
 
         for (final Entry<T, S> entry : entries) {

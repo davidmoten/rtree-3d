@@ -569,7 +569,7 @@ public final class RTree<T, S extends Geometry> {
      * @return entries that intersect with the point p
      */
     public Observable<Entry<T, S>> search(final Point p) {
-        return search(p.mbr());
+        return search(p.mbb());
     }
 
     public Observable<Entry<T, S>> search(Circle circle) {
@@ -611,7 +611,7 @@ public final class RTree<T, S extends Geometry> {
      */
     public <R extends Geometry> Observable<Entry<T, S>> search(final R g,
             final Func2<? super S, ? super R, Boolean> intersects) {
-        return search(g.mbr()).filter(new Func1<Entry<T, S>, Boolean>() {
+        return search(g.mbb()).filter(new Func1<Entry<T, S>, Boolean>() {
             @Override
             public Boolean call(Entry<T, S> entry) {
                 return intersects.call(entry.geometry(), g);
@@ -641,7 +641,7 @@ public final class RTree<T, S extends Geometry> {
             @Override
             public Boolean call(Geometry entry) {
                 // just use the mbr initially
-                return entry.distance(g.mbr()) < maxDistance;
+                return entry.distance(g.mbb()) < maxDistance;
             }
         })
                 // refine with distance function
@@ -665,7 +665,7 @@ public final class RTree<T, S extends Geometry> {
      * @return the sequence of matching entries
      */
     public Observable<Entry<T, S>> search(final Point p, final double maxDistance) {
-        return search(p.mbr(), maxDistance);
+        return search(p.mbb(), maxDistance);
     }
 
     /**
@@ -699,7 +699,7 @@ public final class RTree<T, S extends Geometry> {
      * @return nearest entries to maxCount, in ascending order of distance
      */
     public Observable<Entry<T, S>> nearest(final Point p, final double maxDistance, int maxCount) {
-        return nearest(p.mbr(), maxDistance, maxCount);
+        return nearest(p.mbb(), maxDistance, maxCount);
     }
 
     /**
@@ -752,9 +752,9 @@ public final class RTree<T, S extends Geometry> {
                     @Override
                     public Optional<Box> call(Optional<Box> r, Entry<T, S> entry) {
                         if (r.isPresent())
-                            return of(r.get().add(entry.geometry().mbr()));
+                            return of(r.get().add(entry.geometry().mbb()));
                         else
-                            return of(entry.geometry().mbr());
+                            return of(entry.geometry().mbb());
                     }
                 }).toBlocking().single().or(box(0, 0, 0, 0, 0, 0));
     }
@@ -773,7 +773,7 @@ public final class RTree<T, S extends Geometry> {
         if (!root.isPresent())
             return Optional.absent();
         else
-            return Optional.of(root.get().geometry().mbr());
+            return Optional.of(root.get().geometry().mbb());
     }
 
     /**

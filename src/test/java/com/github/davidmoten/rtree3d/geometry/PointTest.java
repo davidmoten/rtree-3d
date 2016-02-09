@@ -35,20 +35,20 @@ public class PointTest {
     public void testMbr() {
         Point p = Geometries.point(1, 2, 0);
         Box r = Geometries.box(1, 2, 0, 1, 2, 0);
-        assertEquals(r, p.mbr());
+        assertEquals(r, p.mbb());
     }
 
     @Test
     public void testPointIntersectsItself() {
         Point p = Geometries.point(1, 2);
-        assertTrue(p.distance(p.mbr()) == 0);
+        assertTrue(p.distance(p.mbb()) == 0);
     }
 
     @Test
     public void testIntersectIsFalseWhenPointsDiffer() {
         Point p1 = Geometries.point(1, 2);
         Point p2 = Geometries.point(1, 2.000001);
-        assertFalse(p1.distance(p2.mbr()) == 0);
+        assertFalse(p1.distance(p2.mbb()) == 0);
     }
 
     @Test

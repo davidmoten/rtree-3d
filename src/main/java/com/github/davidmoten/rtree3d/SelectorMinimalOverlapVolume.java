@@ -17,8 +17,8 @@ public final class SelectorMinimalOverlapVolume implements Selector {
     public <T, S extends Geometry> Node<T, S> select(Geometry g, List<? extends Node<T, S>> nodes) {
         return min(
                 nodes,
-                compose(overlapVolumeComparator(g.mbr(), nodes), volumeIncreaseComparator(g.mbr()),
-                        volumeComparator(g.mbr())));
+                compose(overlapVolumeComparator(g.mbb(), nodes), volumeIncreaseComparator(g.mbb()),
+                        volumeComparator(g.mbb())));
     }
 
 }

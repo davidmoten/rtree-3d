@@ -164,6 +164,12 @@
             <version>3.0.3</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>au.gov.amsa.risky</groupId>
+            <artifactId>formats</artifactId>
+            <version>0.5.4-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -267,7 +273,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <!--  if at 1.7 can support jdk6 -->
+                <!-- if at 1.7 can support jdk6 -->
                 <version>1.7</version>
                 <executions>
                     <execution>

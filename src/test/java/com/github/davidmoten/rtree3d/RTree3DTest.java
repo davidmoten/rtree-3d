@@ -28,6 +28,9 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
 
+import au.gov.amsa.risky.format.BinaryFixes;
+import au.gov.amsa.risky.format.BinaryFixesFormat;
+import au.gov.amsa.risky.format.Fix;
 import rx.Observable;
 import rx.Observable.Transformer;
 import rx.functions.Action1;
@@ -99,12 +102,24 @@ public class RTree3DTest {
                     }
                 });
 
-        Info info = new Info(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
+        if (true) {
+            entries = BinaryFixes
+                    .from(new File("/home/dave/2014-01-01-binary-fixes-with-mmsi"), true,
+                            BinaryFixesFormat.WITH_MMSI)
+                    .map(new Func1<Fix, Entry<Object, Point>>() {
+                        @Override
+                        public Entry<Object, Point> call(Fix x) {
+                            return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
+                        }
+                    });
+        }
+
+        Range info = new Range(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
                 -Float.MAX_VALUE, -Float.MAX_VALUE);
-        final Info range = entries.reduce(info, new Func2<Info, Entry<Object, Point>, Info>() {
+        final Range range = entries.reduce(info, new Func2<Range, Entry<Object, Point>, Range>() {
             @Override
-            public Info call(Info info, Entry<Object, Point> p) {
-                return new Info(Math.min(info.minX, p.geometry().x()),
+            public Range call(Range info, Entry<Object, Point> p) {
+                return new Range(Math.min(info.minX, p.geometry().x()),
                         Math.min(info.minY, p.geometry().y()),
                         Math.min(info.minZ, p.geometry().z()),
                         Math.max(info.maxX, p.geometry().x()),
@@ -126,7 +141,7 @@ public class RTree3DTest {
         int n = 4;
 
         RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
-        tree = tree.add(normalized.take(100000)).last().toBlocking().single();
+        tree = tree.add(normalized.take(10000000)).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
         System.out.println(tree.asString(3));
@@ -172,7 +187,7 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
-            Node<Object, Point> node, Info range) {
+            Node<Object, Point> node, Range range) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
@@ -190,16 +205,13 @@ public class RTree3DTest {
                 b.addChildren(toProtoNode(child, range));
             }
         }
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                .newBuilder().setXMin(node.geometry().mbr().x1())
-                .setXMax(node.geometry().mbr().x2()).setYMin(node.geometry().mbr().y1())
-                .setYMax(node.geometry().mbr().y2()).setZMin(node.geometry().mbr().z1())
-                .setZMax(node.geometry().mbr().z2()).build();
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = createProtoBox(
+                node.geometry().mbb());
         b.setMbb(box);
         return b.build();
     }
 
-    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Info range, int maxDepth,
+    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Range range, int maxDepth,
             File dir) {
         writeBytesToFile(toProtoNodeSplit(node, range, 0, maxDepth, dir).toByteArray(),
                 new File(dir, "top"), true);
@@ -223,7 +235,7 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
-            Node<Object, Point> node, Info range, int depth, int maxDepth, File dir) {
+            Node<Object, Point> node, Range range, int depth, int maxDepth, File dir) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
@@ -250,13 +262,12 @@ public class RTree3DTest {
                 File file = new File(dir, id);
                 writeBytesToFile(proto.toByteArray(), file, true);
                 b.addSubTreeIds(SubTreeId.newBuilder().setId(id)
-                        .setMbb(createProtoBox(child.geometry().mbr())));
+                        .setMbb(createProtoBox(child.geometry().mbb())));
             }
         } else {
             throw new RuntimeException("unexpected");
         }
-
-        b.setMbb(createProtoBox(node.geometry().mbr()));
+        b.setMbb(createProtoBox(node.geometry().mbb()));
         return b.build();
 
     }
@@ -317,7 +328,7 @@ public class RTree3DTest {
         }
         if (node instanceof NonLeaf) {
             NonLeaf<Object, T> n = (NonLeaf<Object, T>) node;
-            Box b = node.geometry().mbr();
+            Box b = node.geometry().mbb();
             if (depth >= minDepth)
                 print(b, out);
             for (Node<Object, T> child : n.children()) {
@@ -325,7 +336,7 @@ public class RTree3DTest {
             }
         } else if (node instanceof Leaf && depth >= minDepth) {
             Leaf<Object, T> n = (Leaf<Object, T>) node;
-            print(n.geometry().mbr(), out);
+            print(n.geometry().mbb(), out);
         }
     }
 
@@ -333,7 +344,7 @@ public class RTree3DTest {
         out.format("%s,%s,%s,%s,%s,%s\n", b.x1(), b.y1(), b.z1(), b.x2(), b.y2(), b.z2());
     }
 
-    private static class Info {
+    private static class Range {
         final float minX;
         final float minY;
         final float minZ;
@@ -341,7 +352,7 @@ public class RTree3DTest {
         final float maxY;
         final float maxZ;
 
-        private Info(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        private Range(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
             this.minX = minX;
             this.minY = minY;
             this.minZ = minZ;
@@ -393,6 +404,12 @@ public class RTree3DTest {
             return builder.toString();
         }
 
+    }
+
+    public static void main(String[] args) {
+        int count = BinaryFixes.from(new File("/home/dave/2014-01-01-binary-fixes-with-mmsi"), true,
+                BinaryFixesFormat.WITH_MMSI).count().toBlocking().single();
+        System.out.println(count);
     }
 
 }

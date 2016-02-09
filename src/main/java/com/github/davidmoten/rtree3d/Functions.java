@@ -22,8 +22,8 @@ public final class Functions {
 
         @Override
         public Double call(ListPair<? extends HasGeometry> pair) {
-            return (double) pair.group1().geometry().mbr()
-                    .intersectionVolume(pair.group2().geometry().mbr());
+            return (double) pair.group1().geometry().mbb()
+                    .intersectionVolume(pair.group2().geometry().mbb());
         }
     };
 
@@ -33,11 +33,11 @@ public final class Functions {
 
             @Override
             public Double call(HasGeometry g) {
-                Box gPlusR = g.geometry().mbr().add(r);
+                Box gPlusR = g.geometry().mbb().add(r);
                 double m = 0;
                 for (HasGeometry other : list) {
                     if (other != g) {
-                        m += gPlusR.intersectionVolume(other.geometry().mbr());
+                        m += gPlusR.intersectionVolume(other.geometry().mbb());
                     }
                 }
                 return m;
@@ -49,8 +49,8 @@ public final class Functions {
         return new Func1<HasGeometry, Double>() {
             @Override
             public Double call(HasGeometry g) {
-                Box gPlusR = g.geometry().mbr().add(r);
-                return (double) (gPlusR.volume() - g.geometry().mbr().volume());
+                Box gPlusR = g.geometry().mbb().add(r);
+                return (double) (gPlusR.volume() - g.geometry().mbb().volume());
             }
         };
     }

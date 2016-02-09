@@ -18,6 +18,6 @@ public final class SelectorMinimalVolumeIncrease implements Selector {
     @SuppressWarnings("unchecked")
     @Override
     public <T, S extends Geometry> Node<T, S> select(Geometry g, List<? extends Node<T, S>> nodes) {
-        return min(nodes, compose(volumeIncreaseComparator(g.mbr()), volumeComparator(g.mbr())));
+        return min(nodes, compose(volumeIncreaseComparator(g.mbb()), volumeComparator(g.mbb())));
     }
 }

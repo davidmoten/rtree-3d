@@ -19,11 +19,11 @@ public class SplitterRStarTest {
 
         int minSize = 2;
         List<HasGeometry> list = Lists.newArrayList();
-        list.add(Geometries.point(1, 1).mbr());
-        list.add(Geometries.point(2, 2).mbr());
-        list.add(Geometries.point(3, 3).mbr());
-        list.add(Geometries.point(4, 4).mbr());
-        list.add(Geometries.point(5, 5).mbr());
+        list.add(Geometries.point(1, 1).mbb());
+        list.add(Geometries.point(2, 2).mbb());
+        list.add(Geometries.point(3, 3).mbb());
+        list.add(Geometries.point(4, 4).mbb());
+        list.add(Geometries.point(5, 5).mbb());
         List<ListPair<HasGeometry>> pairs = SplitterRStar.getPairs(minSize, list);
         assertEquals(2, pairs.size());
     }

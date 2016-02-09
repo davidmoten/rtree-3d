@@ -95,7 +95,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().x1()).compareTo(n2.geometry().mbr().x1());
+            return ((Float) n1.geometry().mbb().x1()).compareTo(n2.geometry().mbb().x1());
         }
     };
 
@@ -103,7 +103,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().x2()).compareTo(n2.geometry().mbr().x2());
+            return ((Float) n1.geometry().mbb().x2()).compareTo(n2.geometry().mbb().x2());
         }
     };
 
@@ -111,7 +111,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().y1()).compareTo(n2.geometry().mbr().y1());
+            return ((Float) n1.geometry().mbb().y1()).compareTo(n2.geometry().mbb().y1());
         }
     };
 
@@ -119,7 +119,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().y2()).compareTo(n2.geometry().mbr().y2());
+            return ((Float) n1.geometry().mbb().y2()).compareTo(n2.geometry().mbb().y2());
         }
     };
 
@@ -127,7 +127,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().z1()).compareTo(n2.geometry().mbr().z1());
+            return ((Float) n1.geometry().mbb().z1()).compareTo(n2.geometry().mbb().z1());
         }
     };
 
@@ -135,7 +135,7 @@ public final class SplitterRStar implements Splitter {
 
         @Override
         public int compare(HasGeometry n1, HasGeometry n2) {
-            return ((Float) n1.geometry().mbr().z2()).compareTo(n2.geometry().mbr().z2());
+            return ((Float) n1.geometry().mbb().z2()).compareTo(n2.geometry().mbb().z2());
         }
     };
 

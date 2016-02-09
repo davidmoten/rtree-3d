@@ -434,13 +434,13 @@ public class RTreeTest {
                 .add(e(3)).add(e(10)).add(e(11));
         List<Entry<Object, Box>> list = tree.nearest(r(9), 10, 2).toList().toBlocking().single();
         assertEquals(2, list.size());
-        assertEquals(10, list.get(0).geometry().mbr().x1(), PRECISION);
-        assertEquals(11, list.get(1).geometry().mbr().x1(), PRECISION);
+        assertEquals(10, list.get(0).geometry().mbb().x1(), PRECISION);
+        assertEquals(11, list.get(1).geometry().mbb().x1(), PRECISION);
 
         List<Entry<Object, Box>> list2 = tree.nearest(r(10), 8, 3).toList().toBlocking().single();
         assertEquals(2, list2.size());
-        assertEquals(11, list2.get(0).geometry().mbr().x1(), PRECISION);
-        assertEquals(10, list2.get(1).geometry().mbr().x1(), PRECISION);
+        assertEquals(11, list2.get(0).geometry().mbb().x1(), PRECISION);
+        assertEquals(10, list2.get(1).geometry().mbb().x1(), PRECISION);
     }
 
     @Test
@@ -450,8 +450,8 @@ public class RTreeTest {
         List<Entry<Object, Geometry>> list = tree.nearest(r(6), 10, 2).toList().toBlocking()
                 .single();
         assertEquals(2, list.size());
-        assertEquals(3, list.get(0).geometry().mbr().x1(), PRECISION);
-        assertEquals(9, list.get(1).geometry().mbr().x1(), PRECISION);
+        assertEquals(3, list.get(0).geometry().mbb().x1(), PRECISION);
+        assertEquals(9, list.get(1).geometry().mbb().x1(), PRECISION);
     }
 
     @Test
@@ -578,7 +578,7 @@ public class RTreeTest {
     public void testDeleteOnlyDeleteOneIfThereAreMoreThanMaxChildren() {
         Entry<Object, Box> e1 = e(1);
         int count = RTree.maxChildren(4).create().add(e1).add(e1).add(e1).add(e1).add(e1).delete(e1)
-                .search(e1.geometry().mbr()).count().toBlocking().single();
+                .search(e1.geometry().mbb()).count().toBlocking().single();
         assertEquals(4, count);
     }
 
@@ -586,7 +586,7 @@ public class RTreeTest {
     public void testDeleteAllIfThereAreMoreThanMaxChildren() {
         Entry<Object, Box> e1 = e(1);
         int count = RTree.maxChildren(4).create().add(e1).add(e1).add(e1).add(e1).add(e1)
-                .delete(e1, true).search(e1.geometry().mbr()).count().toBlocking().single();
+                .delete(e1, true).search(e1.geometry().mbb()).count().toBlocking().single();
         assertEquals(0, count);
     }
 
@@ -861,7 +861,7 @@ public class RTreeTest {
     private static Func2<Point, Circle, Double> distanceCircleToPoint = new Func2<Point, Circle, Double>() {
         @Override
         public Double call(Point point, Circle circle) {
-            return circle.distance(point.mbr());
+            return circle.distance(point.mbb());
         }
     };
 

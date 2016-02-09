@@ -33,7 +33,7 @@ public final class Circle implements Geometry {
     }
 
     @Override
-    public Box mbr() {
+    public Box mbb() {
         return mbr;
     }
 

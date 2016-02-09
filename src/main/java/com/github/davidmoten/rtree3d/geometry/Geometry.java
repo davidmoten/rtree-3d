@@ -36,7 +36,7 @@ public interface Geometry {
      * 
      * @return minimum bounding rectangle
      */
-    Box mbr();
+    Box mbb();
 
     boolean intersects(Box r);
 }

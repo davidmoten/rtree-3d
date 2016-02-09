@@ -21,7 +21,7 @@ public final class Point implements Geometry {
     }
 
     @Override
-    public Box mbr() {
+    public Box mbb() {
         return mbr;
     }
 
@@ -35,9 +35,9 @@ public final class Point implements Geometry {
     }
 
     public double distanceSquared(Point p) {
-        float dx = mbr().x1() - p.mbr().x1();
-        float dy = mbr().y1() - p.mbr().y1();
-        float dz = mbr().z1() - p.mbr().z1();
+        float dx = mbb().x1() - p.mbb().x1();
+        float dy = mbb().y1() - p.mbb().y1();
+        float dz = mbb().z1() - p.mbb().z1();
         return dx * dx + dy * dy + dz * dz;
     }
 
@@ -67,7 +67,7 @@ public final class Point implements Geometry {
     public boolean equals(Object obj) {
         Optional<Point> other = ObjectsHelper.asClass(obj, Point.class);
         if (other.isPresent()) {
-            return Objects.equal(mbr, other.get().mbr());
+            return Objects.equal(mbr, other.get().mbb());
         } else
             return false;
     }

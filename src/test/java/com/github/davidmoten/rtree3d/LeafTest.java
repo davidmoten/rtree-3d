@@ -31,7 +31,7 @@ public class LeafTest {
         Box r2 = Geometries.box(1, 2, 4, 6);
         @SuppressWarnings("unchecked")
         Box r = new Leaf<Object, Box>(Arrays.asList(Entry.entry(new Object(), r1),
-                Entry.entry(new Object(), r2)), context).geometry().mbr();
+                Entry.entry(new Object(), r2)), context).geometry().mbb();
         assertEquals(r1.add(r2), r);
     }
 }

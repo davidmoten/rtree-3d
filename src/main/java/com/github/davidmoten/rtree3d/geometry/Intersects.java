@@ -95,7 +95,7 @@ public final class Intersects {
 
         @Override
         public Boolean call(Geometry geometry, Point point) {
-            return geometryIntersectsRectangle.call(geometry, point.mbr());
+            return geometryIntersectsRectangle.call(geometry, point.mbb());
         }
     };
 

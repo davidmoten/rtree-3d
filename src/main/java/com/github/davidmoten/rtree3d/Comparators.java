@@ -63,7 +63,7 @@ public final class Comparators {
 
             @Override
             public int compare(HasGeometry g1, HasGeometry g2) {
-                return ((Float) g1.geometry().mbr().add(r).volume()).compareTo(g2.geometry().mbr()
+                return ((Float) g1.geometry().mbb().add(r).volume()).compareTo(g2.geometry().mbb()
                         .add(r).volume());
             }
         };

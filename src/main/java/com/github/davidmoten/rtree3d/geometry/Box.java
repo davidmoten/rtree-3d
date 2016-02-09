@@ -110,7 +110,7 @@ public final class Box implements Geometry, HasGeometry {
     }
 
     @Override
-    public Box mbr() {
+    public Box mbb() {
         return this;
     }
 

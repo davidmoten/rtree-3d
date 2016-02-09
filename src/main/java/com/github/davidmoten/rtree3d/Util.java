@@ -48,7 +48,7 @@ public final class Util {
         float maxY2 = -Float.MAX_VALUE;
         float maxZ2 = -Float.MAX_VALUE;
         for (final HasGeometry item : items) {
-            Box r = item.geometry().mbr();
+            Box r = item.geometry().mbb();
             if (r.x1() < minX1)
                 minX1 = r.x1();
             if (r.y1() < minY1)

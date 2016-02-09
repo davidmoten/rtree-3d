@@ -74,11 +74,11 @@ public final class Visualizer {
     private <T, S extends Geometry> List<RectangleDepth> getRectangleDepths(Node<T, S> node,
             int depth) {
         final List<RectangleDepth> list = new ArrayList<RectangleDepth>();
-        list.add(new RectangleDepth(node.geometry().mbr(), depth));
+        list.add(new RectangleDepth(node.geometry().mbb(), depth));
         if (node instanceof Leaf) {
             final Leaf<T, S> leaf = (Leaf<T, S>) node;
             for (final Entry<T, S> entry : leaf.entries()) {
-                list.add(new RectangleDepth(entry.geometry().mbr(), depth + 2));
+                list.add(new RectangleDepth(entry.geometry().mbb(), depth + 2));
             }
         } else {
             final NonLeaf<T, S> n = (NonLeaf<T, S>) node;
