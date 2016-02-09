@@ -22,6 +22,7 @@ Given the 38,377 data points of greek earthquakes (lat, long, time), the data is
 normalized to a [0,1] range. The points are added to an R*-tree with `minChildren`=2 and `maxChildren`=4. Visualization 
 of the bounding boxes at nodes by depth is below.
 
+Generated with this [commit](83c760b3ee7f9fb7d64f581554424ee7ab88cac7).
 
 | Quadratic split | R*-tree split |
 | :-------------: | :-----------: |
