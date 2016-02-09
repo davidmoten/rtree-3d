@@ -112,16 +112,18 @@ public class RTree3DTest {
                         public Entry<Object, Point> call(Fix x) {
                             return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
                         }
-                    }).take(1000000).toList().flatMapIterable(
-                            new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
-                                @Override
-                                public Iterable<Entry<Object, Point>> call(
-                                        List<Entry<Object, Point>> list) {
-                                    Collections.shuffle(list);
-                                    return list;
-                                }
-                            });
+                    }).take(1000000);
         }
+
+        // shuffle entries
+        entries = entries.toList().flatMapIterable(
+                new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
+                    @Override
+                    public Iterable<Entry<Object, Point>> call(List<Entry<Object, Point>> list) {
+                        Collections.shuffle(list);
+                        return list;
+                    }
+                });
 
         Range info = new Range(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
                 -Float.MAX_VALUE, -Float.MAX_VALUE);
