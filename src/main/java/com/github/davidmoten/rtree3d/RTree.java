@@ -125,6 +125,25 @@ public final class RTree<T, S extends Geometry> {
             return calculateDepth(((NonLeaf<T, S>) node).children().get(0), depth + 1);
     }
 
+    private static <T, S extends Geometry> int countEntries(Node<T, S> node) {
+        if (node instanceof Leaf)
+            return ((Leaf<T, S>) node).count();
+        else {
+            int count = 0;
+            for (Node<T, S> child : ((NonLeaf<T, S>) node).children()) {
+                count += countEntries(child);
+            }
+            return count;
+        }
+    }
+
+    public int countEntries() {
+        if (root.isPresent())
+            return countEntries(root.get());
+        else
+            return 0;
+    }
+
     /**
      * When the number of children in an R-tree node drops below this number the
      * node is deleted and the children are added on to the R-tree again.
@@ -290,6 +309,10 @@ public final class RTree<T, S extends Geometry> {
                     new Context(minChildren.get(), maxChildren.get(), selector, splitter));
         }
 
+    }
+
+    public static <T, S extends Geometry> RTree<T, S> create(Node<T, S> node, Context context) {
+        return new RTree<T, S>(node, countEntries(node), context);
     }
 
     /**

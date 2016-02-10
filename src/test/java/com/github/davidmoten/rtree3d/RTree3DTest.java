@@ -1,11 +1,14 @@
 package com.github.davidmoten.rtree3d;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
@@ -189,9 +192,38 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
 
-        writeNodeAsSplitProtos(tree.root().get(), range, 3, dir);
+        writeNodeAsSplitProtos(tree.root().get(), range, 8, dir);
 
+        System.out.println("reading from protos");
+        for (File file : dir.listFiles()) {
+            RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+            // System.out.println(tr.asString());
+        }
         System.out.println("finished");
+    }
+
+    private static RTree<Object, Geometry> readFromProto(File file, Context context) {
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node = com.github.davidmoten.rtree3d.proto.RTreeProtos.Node
+                    .parseFrom(is);
+            is.close();
+            Node<Object, Geometry> root = toNode(node, context);
+            RTree<Object, Geometry> tree = RTree.create(root, context);
+            System.out.println("file=" + file.getName() + ", tree depth=" + tree.calculateDepth()
+                    + ", entries=" + tree.countEntries());
+            return tree;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null)
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+        }
     }
 
     private static Box createBox(com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b) {
