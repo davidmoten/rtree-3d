@@ -32,6 +32,7 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
+import com.google.common.collect.Lists;
 
 import au.gov.amsa.risky.format.BinaryFixes;
 import au.gov.amsa.risky.format.BinaryFixesFormat;
@@ -118,25 +119,21 @@ public class RTree3DTest {
                     }).take(10000000);
         }
 
-        Range info = new Range(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE,
-                -Float.MAX_VALUE, -Float.MAX_VALUE);
-        final Range range = entries.reduce(info, new Func2<Range, Entry<Object, Point>, Range>() {
+        final Box range = entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
             @Override
-            public Range call(Range info, Entry<Object, Point> p) {
-                return new Range(Math.min(info.minX, p.geometry().x()),
-                        Math.min(info.minY, p.geometry().y()),
-                        Math.min(info.minZ, p.geometry().z()),
-                        Math.max(info.maxX, p.geometry().x()),
-                        Math.max(info.maxY, p.geometry().y()),
-                        Math.max(info.maxZ, p.geometry().z()));
+            public Box call(Box box, Entry<Object, Point> p) {
+                if (box == null)
+                    return p.geometry().mbb();
+                else
+                    return Util.mbr(Lists.newArrayList(box, p.geometry().mbb()));
             }
         }).toBlocking().single();
-        
+
         File dir = new File("target/tree");
         dir.mkdirs();
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Box rangeBox = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                .newBuilder().setXMin(range.minX).setXMax(range.maxX).setYMin(range.minY)
-                .setYMax(range.maxY).setZMin(range.minZ).setZMax(range.maxZ).build();
+                .newBuilder().setXMin(range.x1()).setXMax(range.x2()).setYMin(range.y1())
+                .setYMax(range.y2()).setZMin(range.z1()).setZMax(range.z2()).build();
         writeBytesToFile(rangeBox.toByteArray(), new File(dir, "bounds"), false);
 
         // shuffle entries
@@ -155,10 +152,7 @@ public class RTree3DTest {
                 .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
                     @Override
                     public Entry<Object, Point> call(Entry<Object, Point> entry) {
-                        return Entry.entry(entry.value(),
-                                Point.create(range.normX(entry.geometry().x()),
-                                        range.normY(entry.geometry().y()),
-                                        range.normZ(entry.geometry().z())));
+                        return Entry.entry(entry.value(), range.normalize(entry.geometry()));
                     }
                 })
                 //
@@ -192,7 +186,7 @@ public class RTree3DTest {
         System.out.println("zipped bytes = " + b2.size());
 
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
-        
+
         // now create a node with the top portion of the r-tree down to a depth
         // with a number of total nodes less than a given maximum (but close
         // to). It's leaf nodes are uuids that correspond to serialized files in
@@ -264,7 +258,7 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
-            Node<Object, Point> node, Range range) {
+            Node<Object, Point> node, Box range) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
@@ -288,7 +282,7 @@ public class RTree3DTest {
         return b.build();
     }
 
-    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Range range, int maxDepth,
+    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Box range, int maxDepth,
             File dir) {
         writeBytesToFile(toProtoNodeSplit(node, range, 0, maxDepth, dir).toByteArray(),
                 new File(dir, "top"), true);
@@ -312,7 +306,7 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
-            Node<Object, Point> node, Range range, int depth, int maxDepth, File dir) {
+            Node<Object, Point> node, Box range, int depth, int maxDepth, File dir) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
@@ -419,68 +413,6 @@ public class RTree3DTest {
 
     private static void print(Box b, PrintStream out) {
         out.format("%s,%s,%s,%s,%s,%s\n", b.x1(), b.y1(), b.z1(), b.x2(), b.y2(), b.z2());
-    }
-
-    private static class Range {
-        final float minX;
-        final float minY;
-        final float minZ;
-        final float maxX;
-        final float maxY;
-        final float maxZ;
-
-        private Range(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-            this.minX = minX;
-            this.minY = minY;
-            this.minZ = minZ;
-            this.maxX = maxX;
-            this.maxY = maxY;
-            this.maxZ = maxZ;
-        }
-
-        float normX(float x) {
-            return (x - minX) / (maxX - minX);
-        }
-
-        float normY(float y) {
-            return (y - minY) / (maxY - minY);
-        }
-
-        float normZ(float z) {
-            return (z - minZ) / (maxZ - minZ);
-        }
-
-        float invX(float x) {
-            return x * (maxX - minX) + minX;
-        }
-
-        float invY(float y) {
-            return y * (maxY - minY) + minY;
-        }
-
-        float invZ(float z) {
-            return z * (maxZ - minZ) + minZ;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append("Info [minX=");
-            builder.append(minX);
-            builder.append(", minY=");
-            builder.append(minY);
-            builder.append(", minZ=");
-            builder.append(minZ);
-            builder.append(", maxX=");
-            builder.append(maxX);
-            builder.append(", maxY=");
-            builder.append(maxY);
-            builder.append(", maxZ=");
-            builder.append(maxZ);
-            builder.append("]");
-            return builder.toString();
-        }
-
     }
 
     private static long time(String isoDateTime) {

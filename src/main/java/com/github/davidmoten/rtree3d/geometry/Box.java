@@ -109,6 +109,34 @@ public final class Box implements Geometry, HasGeometry {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
+    public float normX(float x) {
+        return (x - x1) / (x2 - x1);
+    }
+
+    public float normY(float y) {
+        return (y - y1) / (y2 - y1);
+    }
+
+    public float normZ(float z) {
+        return (z - z1) / (z2 - z1);
+    }
+
+    public Point normalize(Point point) {
+        return Point.create(normX(point.x()), normY(point.y()), normZ(point.z()));
+    }
+
+    public float invX(float x) {
+        return x * (x2 - x1) + x1;
+    }
+
+    public float invY(float y) {
+        return y * (y2 - y1) + y1;
+    }
+
+    public float invZ(float z) {
+        return z * (z2 - z1) + z1;
+    }
+
     @Override
     public Box mbb() {
         return this;
