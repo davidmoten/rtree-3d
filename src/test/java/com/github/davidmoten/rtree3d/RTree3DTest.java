@@ -232,6 +232,26 @@ public class RTree3DTest {
 
     }
 
+    private static final Func1<byte[], Position> deserialize = new Func1<byte[], Position>() {
+
+        @Override
+        public Position call(byte[] bytes) {
+            try {
+                return Position.parseFrom(bytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    };
+
+    private static final Func1<Position, byte[]> serialize = new Func1<Position, byte[]>() {
+
+        @Override
+        public byte[] call(Position position) {
+            return position.toByteArray();
+        }
+    };
+
     private static RTree<Object, Geometry> readFromProto(File file, Context context) {
         InputStream is = null;
         try {
