@@ -192,14 +192,32 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
 
-        writeNodeAsSplitProtos(tree.root().get(), range, 8, dir);
+        System.out.println("writing protos");
+        writeNodeAsSplitProtos(tree.root().get(), range, 6, dir);
 
         System.out.println("reading from protos");
         for (File file : dir.listFiles()) {
             RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+            if (file.getName().equals("top")) {
+                System.out.println("querying");
+                {
+                    long start = time("2014-01-01T12:00:00Z");
+                    long finish = time("2014-01-01T13:00:00Z");
+                    float lon1 = 150.469f;
+                    float lon2 = 151.1f;
+                    float lat1 = -35.287f;
+                    float lat2 = -34.849f;
+                    Box searchBox = Box.create(range.normX(lat1), range.normY(lon1),
+                            range.normZ(start), range.normX(lat2), range.normY(lon2),
+                            range.normZ(finish));
+                    int c = tr.search(searchBox).count().toBlocking().single();
+                    System.out.println("found " + c + " in " + searchBox);
+                }
+            }
             // System.out.println(tr.asString());
         }
         System.out.println("finished");
+
     }
 
     private static RTree<Object, Geometry> readFromProto(File file, Context context) {
@@ -451,10 +469,20 @@ public class RTree3DTest {
 
     }
 
-    public static void main(String[] args) {
-        int count = BinaryFixes.from(new File("/home/dave/2014-01-01-binary-fixes-with-mmsi"), true,
-                BinaryFixesFormat.WITH_MMSI).count().toBlocking().single();
-        System.out.println(count);
+    private static long time(String isoDateTime) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        try {
+            return sdf.parse(isoDateTime).getTime();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void main(String[] args) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        System.out.println(sdf.parse("2014-01-01T12:00:00Z").getTime());
     }
 
 }
