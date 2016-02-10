@@ -191,30 +191,38 @@ public class RTree3DTest {
         // with a number of total nodes less than a given maximum (but close
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
+        {
+            for (int maxDepth = 4; maxDepth <= 8; maxDepth++) {
+                System.out.println("writing protos for top max depth=" + maxDepth);
+                writeNodeAsSplitProtos(tree.root().get(), range, maxDepth, dir);
 
-        System.out.println("writing protos");
-        writeNodeAsSplitProtos(tree.root().get(), range, 6, dir);
-
-        System.out.println("reading from protos");
-        for (File file : dir.listFiles()) {
-            RTree<Object, Geometry> tr = readFromProto(file, tree.context());
-            if (file.getName().equals("top")) {
-                System.out.println("querying");
-                {
-                    long start = time("2014-01-01T12:00:00Z");
-                    long finish = time("2014-01-01T13:00:00Z");
-                    float lon1 = 150.469f;
-                    float lon2 = 151.1f;
-                    float lat1 = -35.287f;
-                    float lat2 = -34.849f;
-                    Box searchBox = Box.create(range.normX(lat1), range.normY(lon1),
-                            range.normZ(start), range.normX(lat2), range.normY(lon2),
-                            range.normZ(finish));
-                    int c = tr.search(searchBox).count().toBlocking().single();
-                    System.out.println("found " + c + " in " + searchBox);
+                System.out.println("reading from protos");
+                double sum = 0;
+                long fileCount = 0;
+                for (File file : dir.listFiles()) {
+                    RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+                    if (file.getName().equals("top")) {
+                        System.out.println("querying");
+                        {
+                            long start = time("2014-01-01T12:00:00Z");
+                            long finish = time("2014-01-01T13:00:00Z");
+                            float lon1 = 150.469f;
+                            float lon2 = 151.1f;
+                            float lat1 = -35.287f;
+                            float lat2 = -34.849f;
+                            Box searchBox = Box.create(range.normX(lat1), range.normY(lon1),
+                                    range.normZ(start), range.normX(lat2), range.normY(lon2),
+                                    range.normZ(finish));
+                            int c = tr.search(searchBox).count().toBlocking().single();
+                            System.out.println("found " + c + " in " + searchBox);
+                        }
+                    } else {
+                        fileCount += 1;
+                        sum = sum + file.length();
+                    }
                 }
+                System.out.println("average sub-tree proto file size=" + sum / fileCount);
             }
-            // System.out.println(tr.asString());
         }
         System.out.println("finished");
 
@@ -229,8 +237,6 @@ public class RTree3DTest {
             is.close();
             Node<Object, Geometry> root = toNode(node, context);
             RTree<Object, Geometry> tree = RTree.create(root, context);
-            System.out.println("file=" + file.getName() + ", tree depth=" + tree.calculateDepth()
-                    + ", entries=" + tree.countEntries());
             return tree;
         } catch (IOException e) {
             throw new RuntimeException(e);
