@@ -31,6 +31,7 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
+import com.github.davidmoten.rx.slf4j.Logging;
 
 import au.gov.amsa.risky.format.BinaryFixes;
 import au.gov.amsa.risky.format.BinaryFixesFormat;
@@ -130,6 +131,13 @@ public class RTree3DTest {
                         Math.max(info.maxZ, p.geometry().z()));
             }
         }).toBlocking().single();
+        
+        File dir = new File("target/tree");
+        dir.mkdirs();
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box rangeBox = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                .newBuilder().setXMin(range.minX).setXMax(range.maxX).setYMin(range.minY)
+                .setYMax(range.maxY).setZMin(range.minZ).setZMax(range.maxZ).build();
+        writeBytesToFile(rangeBox.toByteArray(), new File(dir, "bounds"), false);
 
         // shuffle entries
         entries = entries.toList().flatMapIterable(
@@ -152,7 +160,10 @@ public class RTree3DTest {
                                         range.normY(entry.geometry().y()),
                                         range.normZ(entry.geometry().z())));
                     }
-                });
+                })
+                //
+                .lift(Logging.<Entry<Object, Point>> logger().showCount().showMemory().every(100000)
+                        .log());
         System.out.println(range);
         int n = 4;
 
@@ -182,14 +193,13 @@ public class RTree3DTest {
 
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
 
+        
         // now create a node with the top portion of the r-tree down to a depth
         // with a number of total nodes less than a given maximum (but close
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
         {
             for (int maxDepth = 4; maxDepth <= 8; maxDepth++) {
-                File dir = new File("target/tree");
-                dir.mkdir();
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
