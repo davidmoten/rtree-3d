@@ -107,7 +107,7 @@ public class RTree3DTest {
                     }
                 });
 
-        if (System.getProperty("fixes") != null) {
+        if (false && System.getProperty("fixes") != null) {
             entries = BinaryFixes
                     .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
                     .map(new Func1<Fix, Entry<Object, Point>>() {
@@ -192,7 +192,6 @@ public class RTree3DTest {
         System.out.println("zipped bytes = " + b2.size());
 
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
-
         
         // now create a node with the top portion of the r-tree down to a depth
         // with a number of total nodes less than a given maximum (but close
