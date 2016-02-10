@@ -182,17 +182,16 @@ public class RTree3DTest {
 
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
 
-        File dir = new File("target/tree");
-        dir.mkdir();
-        for (File f : dir.listFiles())
-            f.delete();
-
         // now create a node with the top portion of the r-tree down to a depth
         // with a number of total nodes less than a given maximum (but close
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
         {
             for (int maxDepth = 4; maxDepth <= 8; maxDepth++) {
+                File dir = new File("target/tree");
+                dir.mkdir();
+                for (File f : dir.listFiles())
+                    f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
                 writeNodeAsSplitProtos(tree.root().get(), range, maxDepth, dir);
 
