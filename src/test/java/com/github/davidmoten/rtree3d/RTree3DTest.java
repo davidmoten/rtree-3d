@@ -119,7 +119,7 @@ public class RTree3DTest {
                     }).take(10000000);
         }
 
-        final Box range = entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
+        final Box bounds = entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
             @Override
             public Box call(Box box, Entry<Object, Point> p) {
                 if (box == null)
@@ -131,10 +131,10 @@ public class RTree3DTest {
 
         File dir = new File("target/tree");
         dir.mkdirs();
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box rangeBox = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                .newBuilder().setXMin(range.x1()).setXMax(range.x2()).setYMin(range.y1())
-                .setYMax(range.y2()).setZMin(range.z1()).setZMax(range.z2()).build();
-        writeBytesToFile(rangeBox.toByteArray(), new File(dir, "bounds"), false);
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
+                .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
+        writeBytesToFile(protoBounds.toByteArray(), new File(dir, "bounds"), false);
 
         // shuffle entries
         entries = entries.toList().flatMapIterable(
@@ -152,13 +152,13 @@ public class RTree3DTest {
                 .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
                     @Override
                     public Entry<Object, Point> call(Entry<Object, Point> entry) {
-                        return Entry.entry(entry.value(), range.normalize(entry.geometry()));
+                        return Entry.entry(entry.value(), bounds.normalize(entry.geometry()));
                     }
                 })
                 //
                 .lift(Logging.<Entry<Object, Point>> logger().showCount().showMemory().every(100000)
                         .log());
-        System.out.println(range);
+        System.out.println(bounds);
         int n = 4;
 
         RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
@@ -176,7 +176,7 @@ public class RTree3DTest {
             System.out.println("depth file written " + i);
         }
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
-                range);
+                bounds);
         byte[] bytes = pNode.toByteArray();
         System.out.println("bytes in protobuf = " + bytes.length);
         ByteArrayOutputStream b2 = new ByteArrayOutputStream();
@@ -196,7 +196,7 @@ public class RTree3DTest {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
-                writeNodeAsSplitProtos(tree.root().get(), range, maxDepth, dir);
+                writeNodeAsSplitProtos(tree.root().get(), bounds, maxDepth, dir);
 
                 System.out.println("reading from protos");
                 double sum = 0;
@@ -212,9 +212,9 @@ public class RTree3DTest {
                             float lon2 = 151.1f;
                             float lat1 = -35.287f;
                             float lat2 = -34.849f;
-                            Box searchBox = Box.create(range.normX(lat1), range.normY(lon1),
-                                    range.normZ(start), range.normX(lat2), range.normY(lon2),
-                                    range.normZ(finish));
+                            Box searchBox = Box.create(bounds.normX(lat1), bounds.normY(lon1),
+                                    bounds.normZ(start), bounds.normX(lat2), bounds.normY(lon2),
+                                    bounds.normZ(finish));
                             int c = tr.search(searchBox).count().toBlocking().single();
                             System.out.println("found " + c + " in " + searchBox);
                         }
@@ -258,14 +258,14 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
-            Node<Object, Point> node, Box range) {
+            Node<Object, Point> node, Box bounds) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
                 Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
-                        .setLatitude(range.invX(entry.geometry().x()))
-                        .setLongitude(range.invY(entry.geometry().y()))
-                        .setTimeEpochMs(Math.round((double) range.invZ(entry.geometry().z())))
+                        .setLatitude(bounds.invX(entry.geometry().x()))
+                        .setLongitude(bounds.invY(entry.geometry().y()))
+                        .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
                         .build();
                 b.addPositions(p);
             }
@@ -273,7 +273,7 @@ public class RTree3DTest {
             // is NonLeaf
             NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
             for (Node<Object, Point> child : n.children()) {
-                b.addChildren(toProtoNode(child, range));
+                b.addChildren(toProtoNode(child, bounds));
             }
         }
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = createProtoBox(
@@ -282,9 +282,9 @@ public class RTree3DTest {
         return b.build();
     }
 
-    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Box range, int maxDepth,
+    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Box bounds, int maxDepth,
             File dir) {
-        writeBytesToFile(toProtoNodeSplit(node, range, 0, maxDepth, dir).toByteArray(),
+        writeBytesToFile(toProtoNodeSplit(node, bounds, 0, maxDepth, dir).toByteArray(),
                 new File(dir, "top"), true);
     }
 
@@ -306,14 +306,14 @@ public class RTree3DTest {
     }
 
     private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
-            Node<Object, Point> node, Box range, int depth, int maxDepth, File dir) {
+            Node<Object, Point> node, Box bounds, int depth, int maxDepth, File dir) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
                 Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
-                        .setLatitude(range.invX(entry.geometry().x()))
-                        .setLongitude(range.invY(entry.geometry().y()))
-                        .setTimeEpochMs(Math.round((double) range.invZ(entry.geometry().z())))
+                        .setLatitude(bounds.invX(entry.geometry().x()))
+                        .setLongitude(bounds.invY(entry.geometry().y()))
+                        .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
                         .build();
                 b.addPositions(p);
             }
@@ -321,14 +321,14 @@ public class RTree3DTest {
             // is NonLeaf
             NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
             for (Node<Object, Point> child : n.children()) {
-                b.addChildren(toProtoNodeSplit(child, range, depth + 1, maxDepth, dir));
+                b.addChildren(toProtoNodeSplit(child, bounds, depth + 1, maxDepth, dir));
             }
         } else if (depth == maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
             NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
             for (Node<Object, Point> child : n.children()) {
                 com.github.davidmoten.rtree3d.proto.RTreeProtos.Node proto = toProtoNode(child,
-                        range);
+                        bounds);
                 String id = UUID.randomUUID().toString().replace("-", "");
                 File file = new File(dir, id);
                 writeBytesToFile(proto.toByteArray(), file, true);
