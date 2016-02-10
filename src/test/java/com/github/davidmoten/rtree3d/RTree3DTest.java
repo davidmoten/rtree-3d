@@ -26,13 +26,15 @@ import org.junit.Test;
 import com.github.davidmoten.rtree3d.geometry.Box;
 import com.github.davidmoten.rtree3d.geometry.Geometry;
 import com.github.davidmoten.rtree3d.geometry.Point;
+import com.github.davidmoten.rtree3d.proto.PositionProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
-import com.github.davidmoten.rtree3d.proto.RTreeProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
 import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import au.gov.amsa.risky.format.BinaryFixes;
 import au.gov.amsa.risky.format.BinaryFixesFormat;
@@ -267,7 +269,7 @@ public class RTree3DTest {
                         .setLongitude(bounds.invY(entry.geometry().y()))
                         .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
                         .build();
-                b.addPositions(p);
+                b.addObjects(p.toByteString());
             }
         } else {
             // is NonLeaf
@@ -315,7 +317,7 @@ public class RTree3DTest {
                         .setLongitude(bounds.invY(entry.geometry().y()))
                         .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
                         .build();
-                b.addPositions(p);
+                b.addObjects(p.toByteString());
             }
         } else if (depth < maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
@@ -369,8 +371,13 @@ public class RTree3DTest {
         } else {
             // is leaf
             List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
-            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Position p : node
-                    .getPositionsList()) {
+            for (ByteString bs : node.getObjectsList()) {
+                Position p;
+                try {
+                    p = Position.parseFrom(bs);
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
                 entries.add(Entry.entry((Object) p,
                         (Geometry) Point.create(p.getLatitude(), p.getLongitude())));
             }

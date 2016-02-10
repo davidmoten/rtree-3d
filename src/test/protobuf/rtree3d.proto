@@ -9,7 +9,7 @@ message Node {
     Box mbb = 1;
     //these lists mutually exclusive (only one should appear)
     repeated Node children = 2;
-    repeated Position positions = 3;
+    repeated bytes objects = 3;
     repeated SubTreeId subTreeIds = 4;
 }
 
@@ -20,20 +20,6 @@ message Box {
     float yMax = 4;
     float zMin = 5;
     float zMax = 6;
-}
-
-message Position {
-  int32 identifierType = 1;
-  oneof identifierValue {
-  	int64 valueInteger = 2;
-  	string valueString = 3;
-  }
-  float latitude = 4;
-  float longitude = 5 ;
-  int64 timeEpochMs = 6;
-  int32 headingDegrees = 7; // 0 <= x < 360
-  int32 courseDegrees = 8; // 0 <= x < 360
-  float speedKnots = 9; // -1 = not present
 }
 
 message SubTreeId {
