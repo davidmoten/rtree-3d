@@ -29,7 +29,7 @@ RTree<Object, Point> tree =
 
 Visualization
 -----------------------
-Given the 38,377 data points of greek earthquakes (lat, long, time) from 1964 to 2000, the data is scanned to establish the ranges for each coordinate then normalized to a [0,1] range. The points are shuffled then added to an R-tree with `minChildren`=2 and `maxChildren`=4 using either the R* heuristics or standard R-tree heuristics. Visualization of the bounding boxes at nodes by method and depth is below.
+Given the 38,377 data points of greek earthquakes (lat, long, time) from 1964 to 2000, the data is scanned to establish the ranges for each coordinate then normalized to a [0,1] range. The points are shuffled then added to an R-tree with `minChildren=2` and `maxChildren=4` using either the R* heuristics or standard R-tree heuristics. Visualization of the bounding boxes at nodes by method and depth is below.
 
 Generated with this [commit](tree/83c760b3ee7f9fb7d64f581554424ee7ab88cac7).
 
