@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -44,10 +45,12 @@ import au.gov.amsa.risky.format.BinaryFixesFormat;
 import au.gov.amsa.risky.format.Fix;
 import rx.Observable;
 import rx.Observable.Transformer;
+import rx.Scheduler;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 
 public class RTree3DTest {
 
@@ -293,6 +296,8 @@ public class RTree3DTest {
 
     private void search(final File dir, boolean useFixes) {
         try {
+            final Scheduler scheduler = Schedulers.from(Executors.newFixedThreadPool(1));
+            long t = System.currentTimeMillis();
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Context context = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
                     .parseFrom(readBytes(new File(dir, "context")));
             Box bounds = createBox(context.getBounds());
@@ -305,16 +310,24 @@ public class RTree3DTest {
                     new Func1<Entry<String, Geometry>, Observable<Entry<Object, Geometry>>>() {
                         @Override
                         public Observable<Entry<Object, Geometry>> call(
-                                Entry<String, Geometry> entry) {
-                            String filename = entry.value();
-                            System.out.println("reading " + filename);
-                            RTree<Object, Geometry> tree = readFromProto(new File(dir, filename),
-                                    ctx);
-                            System.out.println("loaded " + filename);
-                            return tree.search(searchBox);
+                                final Entry<String, Geometry> entry) {
+                            return Observable
+                                    .defer(new Func0<Observable<Entry<Object, Geometry>>>() {
+                                @Override
+                                public Observable<Entry<Object, Geometry>> call() {
+                                    String filename = entry.value();
+                                    System.out.println("reading " + filename);
+                                    RTree<Object, Geometry> tree = readFromProto(
+                                            new File(dir, filename), ctx);
+                                    System.out.println("loaded " + filename);
+                                    return tree.search(searchBox);
+                                }
+                            }).subscribeOn(scheduler);
+
                         }
                     }).count().toBlocking().single();
-            System.out.println("search found " + found);
+            System.out.println(
+                    "search found " + found + " in " + (System.currentTimeMillis() - t) + "ms");
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
@@ -339,26 +352,6 @@ public class RTree3DTest {
             }
         }
     }
-
-    private static final Func1<byte[], Position> deserialize = new Func1<byte[], Position>() {
-
-        @Override
-        public Position call(byte[] bytes) {
-            try {
-                return Position.parseFrom(bytes);
-            } catch (InvalidProtocolBufferException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
-
-    private static final Func1<Position, byte[]> serialize = new Func1<Position, byte[]>() {
-
-        @Override
-        public byte[] call(Position position) {
-            return position.toByteArray();
-        }
-    };
 
     private static RTree<Object, Geometry> readFromProto(File file, Context context) {
         InputStream is = null;
@@ -500,8 +493,9 @@ public class RTree3DTest {
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }
-                entries.add(Entry.entry((Object) p,
-                        (Geometry) Point.create(p.getLatitude(), p.getLongitude())));
+                Box g = createBox(ent.getBox());
+                entries.add(
+                        Entry.entry((Object) p, (Geometry) Point.create(g.x1(), g.y1(), g.z1())));
             }
             return new Leaf<Object, Geometry>(entries, box, context);
         }
