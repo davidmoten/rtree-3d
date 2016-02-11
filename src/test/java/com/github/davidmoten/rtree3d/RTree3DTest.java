@@ -141,7 +141,7 @@ public class RTree3DTest {
 
                     }
                 });
-        boolean useFixes = false && System.getProperty("fixes") != null;
+        boolean useFixes = System.getProperty("fixes") != null;
         if (useFixes) {
             entries = BinaryFixes
                     .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
@@ -221,7 +221,7 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
         {
-            for (int maxDepth = 4; maxDepth <= 8; maxDepth++) {
+            for (int maxDepth = 8; maxDepth <= 8; maxDepth++) {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
@@ -295,9 +295,10 @@ public class RTree3DTest {
     }
 
     private void search(final File dir, boolean useFixes) {
+        System.out.println("searching");
         try {
-            final Scheduler scheduler = Schedulers.from(Executors.newFixedThreadPool(1));
-            long t = System.currentTimeMillis();
+            final Scheduler scheduler = Schedulers.from(Executors.newFixedThreadPool(10));
+
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Context context = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
                     .parseFrom(readBytes(new File(dir, "context")));
             Box bounds = createBox(context.getBounds());
@@ -306,6 +307,7 @@ public class RTree3DTest {
             RTree<String, Geometry> tree = (RTree<String, Geometry>) (RTree<?, ?>) readFromProto(
                     new File(dir, "top"), ctx);
             final Box searchBox = createSearchBox(useFixes, bounds);
+            long t = System.currentTimeMillis();
             int found = tree.search(searchBox).flatMap(
                     new Func1<Entry<String, Geometry>, Observable<Entry<Object, Geometry>>>() {
                         @Override
@@ -317,9 +319,13 @@ public class RTree3DTest {
                                 public Observable<Entry<Object, Geometry>> call() {
                                     String filename = entry.value();
                                     System.out.println("reading " + filename);
+                                    try {
+                                        Thread.sleep(10);
+                                    } catch (InterruptedException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                     RTree<Object, Geometry> tree = readFromProto(
                                             new File(dir, filename), ctx);
-                                    System.out.println("loaded " + filename);
                                     return tree.search(searchBox);
                                 }
                             }).subscribeOn(scheduler);
