@@ -9,8 +9,13 @@ message Node {
     Box mbb = 1;
     //these lists mutually exclusive (only one should appear)
     repeated Node children = 2;
-    repeated bytes objects = 3;
+    repeated Entry entries = 3;
     repeated SubTreeId subTreeIds = 4;
+}
+
+message Entry {
+    Box box = 1;
+    bytes object = 2;
 }
 
 message Box {

@@ -33,7 +33,6 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
 import com.google.common.collect.Lists;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import au.gov.amsa.risky.format.BinaryFixes;
@@ -95,8 +94,7 @@ public class RTree3DTest {
                                         long time = sdf.parse(items[0]).getTime();
                                         float lat = Float.parseFloat(items[1]);
                                         float lon = Float.parseFloat(items[2]);
-                                        return Entry.entry(null,
-                                                Point.create(lat, lon, time / 1E12));
+                                        return Entry.entry(null, Point.create(lat, lon, time));
                                     } catch (ParseException e) {
                                         throw new RuntimeException(e);
                                     }
@@ -109,8 +107,8 @@ public class RTree3DTest {
 
                     }
                 });
-
-        if (false && System.getProperty("fixes") != null) {
+        boolean useFixes = false && System.getProperty("fixes") != null;
+        if (useFixes) {
             entries = BinaryFixes
                     .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
                     .map(new Func1<Fix, Entry<Object, Point>>() {
@@ -208,12 +206,29 @@ public class RTree3DTest {
                     if (file.getName().equals("top")) {
                         System.out.println("querying");
                         {
-                            long start = time("2014-01-01T12:00:00Z");
-                            long finish = time("2014-01-01T13:00:00Z");
-                            float lon1 = 150.469f;
-                            float lon2 = 151.1f;
-                            float lat1 = -35.287f;
-                            float lat2 = -34.849f;
+                            long start;
+                            long finish;
+                            float lon1;
+                            float lon2;
+                            float lat1;
+                            float lat2;
+                            if (useFixes) {
+                                // jervis bay
+                                start = time("2014-01-01T12:00:00Z");
+                                finish = time("2014-01-01T13:00:00Z");
+                                lat1 = -35.287f;
+                                lat2 = -34.849f;
+                                lon1 = 150.469f;
+                                lon2 = 151.1f;
+                            } else {
+                                // greek earthquake data
+                                start = time("1990-01-01T00:00:00Z");
+                                finish = time("1991-01-01T00:00:00Z");
+                                lat1 = 33f;
+                                lat2 = 42f;
+                                lon1 = 20f;
+                                lon2 = 30f;
+                            }
                             Box searchBox = Box.create(bounds.normX(lat1), bounds.normY(lon1),
                                     bounds.normZ(start), bounds.normX(lat2), bounds.normY(lon2),
                                     bounds.normZ(finish));
@@ -225,7 +240,8 @@ public class RTree3DTest {
                         sum = sum + file.length();
                     }
                 }
-                System.out.println("average sub-tree proto file size=" + sum / fileCount);
+                System.out.println(
+                        "average sub-tree proto file size=" + Math.round(sum / fileCount) + "B");
             }
         }
         System.out.println("finished");
@@ -284,12 +300,7 @@ public class RTree3DTest {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
-                Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
-                        .setLatitude(bounds.invX(entry.geometry().x()))
-                        .setLongitude(bounds.invY(entry.geometry().y()))
-                        .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
-                        .build();
-                b.addObjects(p.toByteString());
+                b.addEntries(createProtoEntry(bounds, entry));
             }
         } else {
             // is NonLeaf
@@ -332,12 +343,7 @@ public class RTree3DTest {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
             for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
-                Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
-                        .setLatitude(bounds.invX(entry.geometry().x()))
-                        .setLongitude(bounds.invY(entry.geometry().y()))
-                        .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z())))
-                        .build();
-                b.addObjects(p.toByteString());
+                b.addEntries(createProtoEntry(bounds, entry));
             }
         } else if (depth < maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
@@ -391,10 +397,11 @@ public class RTree3DTest {
         } else {
             // is leaf
             List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
-            for (ByteString bs : node.getObjectsList()) {
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry ent : node
+                    .getEntriesList()) {
                 Position p;
                 try {
-                    p = Position.parseFrom(bs);
+                    p = Position.parseFrom(ent.getObject());
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }
@@ -450,6 +457,18 @@ public class RTree3DTest {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry createProtoEntry(
+            Box bounds, Entry<Object, Point> entry) {
+        Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
+                .setLatitude(bounds.invX(entry.geometry().x()))
+                .setLongitude(bounds.invY(entry.geometry().y()))
+                .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z()))).build();
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry ent = com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry
+                .newBuilder().setBox(createProtoBox(entry.geometry().mbb()))
+                .setObject(p.toByteString()).build();
+        return ent;
     }
 
     public static void main(String[] args) throws ParseException {
