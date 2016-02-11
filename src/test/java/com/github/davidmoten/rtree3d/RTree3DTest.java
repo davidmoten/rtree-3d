@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
@@ -30,9 +31,11 @@ import com.github.davidmoten.rtree3d.proto.PositionProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
+import com.github.davidmoten.rx.Functions;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharStreams;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import au.gov.amsa.risky.format.BinaryFixes;
@@ -48,7 +51,24 @@ import rx.functions.Func2;
 public class RTree3DTest {
 
     @Test
+    public void testShuffle() throws FileNotFoundException {
+        List<Integer> list = new ArrayList<Integer>();
+        for (int i = 0; i < 38377; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list);
+        PrintStream out = new PrintStream("target/order.txt");
+        for (int i : list) {
+            out.println(i);
+        }
+        out.close();
+    }
+
+    @Test
     public void test() throws IOException {
+        final List<String> indexes = CharStreams.readLines(new InputStreamReader(
+                RTree3DTest.class.getResourceAsStream("/greek-earthquake-shuffle.txt")));
+
         Observable<Entry<Object, Point>> entries = Observable
                 .defer(new Func0<Observable<Entry<Object, Point>>>() {
 
@@ -100,7 +120,17 @@ public class RTree3DTest {
                                     }
 
                                 }
-                            });
+                            }).toList().map(
+                                    new Func1<List<Entry<Object, Point>>, List<Entry<Object, Point>>>() {
+                                @Override
+                                public List<Entry<Object, Point>> call(
+                                        List<Entry<Object, Point>> list) {
+                                    List<Entry<Object, Point>> list2 = new ArrayList<Entry<Object, Point>>();
+                                    for (String index : indexes)
+                                        list2.add(list.get(Integer.parseInt(index)));
+                                    return list2;
+                                }
+                            }).flatMapIterable(Functions.<List<Entry<Object, Point>>> identity());
                         } catch (IOException e) {
                             return Observable.error(e);
                         }
@@ -117,6 +147,18 @@ public class RTree3DTest {
                             return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
                         }
                     }).take(10000000);
+            // shuffle entries
+            entries = entries.toList().flatMapIterable(
+                    new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
+                        @Override
+                        public Iterable<Entry<Object, Point>> call(
+                                List<Entry<Object, Point>> list) {
+                            System.out.println("shuffling");
+                            Collections.shuffle(list);
+                            System.out.println("shuffled");
+                            return list;
+                        }
+                    });
         }
 
         final Box bounds = entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
@@ -136,18 +178,6 @@ public class RTree3DTest {
                 .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
         writeBytesToFile(protoBounds.toByteArray(), new File(dir, "bounds"), false);
 
-        // shuffle entries
-        entries = entries.toList().flatMapIterable(
-                new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
-                    @Override
-                    public Iterable<Entry<Object, Point>> call(List<Entry<Object, Point>> list) {
-                        System.out.println("shuffling");
-                        Collections.shuffle(list);
-                        System.out.println("shuffled");
-                        return list;
-                    }
-                });
-
         Observable<Entry<Object, Point>> normalized = entries
                 .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
                     @Override
@@ -161,7 +191,7 @@ public class RTree3DTest {
         System.out.println(bounds);
         int n = 4;
 
-        RTree<Object, Point> tree = RTree.star().minChildren((n) / 2).maxChildren(n).create();
+        RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
         tree = tree.add(normalized).last().toBlocking().single();
         System.out.println(tree.size());
         System.out.println(tree.calculateDepth());
