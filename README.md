@@ -33,6 +33,8 @@ Given the 38,377 data points of greek earthquakes (lat, long, time) from 1964 to
 
 Generated with this [commit](tree/83c760b3ee7f9fb7d64f581554424ee7ab88cac7).
 
+The plots below are generated from the same shuffle of data points.
+
 | Quadratic split | R*-tree split |
 | :-------------: | :-----------: |
 | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot0-q.png" /> | <img src="https://raw.githubusercontent.com/davidmoten/davidmoten.github.io/master/resources/rtree-3d/plot0.png" /> |
