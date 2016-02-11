@@ -18,6 +18,14 @@ message Entry {
     bytes object = 2;
 }
 
+message Context {
+    // this is the bounds that is used to normalize the x,y,z values in the R-tree
+    // normally this will be the same as the mbb of the root Node of the R-tree 
+    Box bounds = 1;
+	int32 minChildren = 2; 
+	int32 maxChildren = 3;   
+}
+
 message Box {
     float xMin = 1;
     float xMax = 2;

@@ -35,6 +35,7 @@ import com.github.davidmoten.rx.Functions;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -173,10 +174,6 @@ public class RTree3DTest {
 
         File dir = new File("target/tree");
         dir.mkdirs();
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
-                .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
-        writeBytesToFile(protoBounds.toByteArray(), new File(dir, "bounds"), false);
 
         Observable<Entry<Object, Point>> normalized = entries
                 .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
@@ -193,8 +190,7 @@ public class RTree3DTest {
 
         RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
         tree = tree.add(normalized).last().toBlocking().single();
-        System.out.println(tree.size());
-        System.out.println(tree.calculateDepth());
+        System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
         System.out.println(tree.asString(3));
         long t = System.currentTimeMillis();
         int count = tree.search(Box.create(39.0, 22.0, 0, 40.0, 23.0, 3.15684946E11)).count()
@@ -226,56 +222,122 @@ public class RTree3DTest {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                        .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
+                        .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
+                        .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
+                        .build();
+                writeBytesToFile(protoContext.toByteArray(), new File(dir, "context"), false);
+
                 writeNodeAsSplitProtos(tree.root().get(), bounds, maxDepth, dir);
 
                 System.out.println("reading from protos");
                 double sum = 0;
                 long fileCount = 0;
                 for (File file : dir.listFiles()) {
-                    RTree<Object, Geometry> tr = readFromProto(file, tree.context());
-                    if (file.getName().equals("top")) {
-                        System.out.println("querying");
-                        {
-                            long start;
-                            long finish;
-                            float lon1;
-                            float lon2;
-                            float lat1;
-                            float lat2;
-                            if (useFixes) {
-                                // jervis bay
-                                start = time("2014-01-01T12:00:00Z");
-                                finish = time("2014-01-01T13:00:00Z");
-                                lat1 = -35.287f;
-                                lat2 = -34.849f;
-                                lon1 = 150.469f;
-                                lon2 = 151.1f;
-                            } else {
-                                // greek earthquake data
-                                start = time("1990-01-01T00:00:00Z");
-                                finish = time("1991-01-01T00:00:00Z");
-                                lat1 = 33f;
-                                lat2 = 42f;
-                                lon1 = 20f;
-                                lon2 = 30f;
-                            }
-                            Box searchBox = Box.create(bounds.normX(lat1), bounds.normY(lon1),
-                                    bounds.normZ(start), bounds.normX(lat2), bounds.normY(lon2),
-                                    bounds.normZ(finish));
+                    if (!file.getName().equals("context")) {
+                        RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+                        if (file.getName().equals("top")) {
+                            System.out.println("querying");
+                            Box searchBox = createSearchBox(useFixes, bounds);
                             int c = tr.search(searchBox).count().toBlocking().single();
                             System.out.println("found " + c + " in " + searchBox);
+                        } else {
+                            fileCount += 1;
+                            sum = sum + file.length();
                         }
-                    } else {
-                        fileCount += 1;
-                        sum = sum + file.length();
                     }
                 }
                 System.out.println(
                         "average sub-tree proto file size=" + Math.round(sum / fileCount) + "B");
             }
         }
+
+        // search
+        search(dir, useFixes);
         System.out.println("finished");
 
+    }
+
+    private Box createSearchBox(boolean useFixes, final Box bounds) {
+        if (useFixes)
+            return createSearchBoxPositions(bounds);
+        else
+            return createSearchBoxGreek(bounds);
+    }
+
+    private static Box createSearchBoxPositions(Box bounds) {
+        // jervis bay
+        long start = time("2014-01-01T12:00:00Z");
+        long finish = time("2014-01-01T13:00:00Z");
+        float lat1 = -35.287f;
+        float lat2 = -34.849f;
+        float lon1 = 150.469f;
+        float lon2 = 151.1f;
+        return Box.create(bounds.normX(lat1), bounds.normY(lon1), bounds.normZ(start),
+                bounds.normX(lat2), bounds.normY(lon2), bounds.normZ(finish));
+    }
+
+    private static Box createSearchBoxGreek(Box bounds) {
+        // greek earthquake data
+        long start = time("1990-01-01T00:00:00Z");
+        long finish = time("1991-01-01T00:00:00Z");
+        float lat1 = 33f;
+        float lat2 = 42f;
+        float lon1 = 20f;
+        float lon2 = 30f;
+        return Box.create(bounds.normX(lat1), bounds.normY(lon1), bounds.normZ(start),
+                bounds.normX(lat2), bounds.normY(lon2), bounds.normZ(finish));
+    }
+
+    private void search(final File dir, boolean useFixes) {
+        try {
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Context context = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
+                    .parseFrom(readBytes(new File(dir, "context")));
+            Box bounds = createBox(context.getBounds());
+            final Context ctx = new Context(context.getMinChildren(), context.getMaxChildren(),
+                    new SelectorRStar(), new SplitterRStar());
+            RTree<String, Geometry> tree = (RTree<String, Geometry>) (RTree<?, ?>) readFromProto(
+                    new File(dir, "top"), ctx);
+            final Box searchBox = createSearchBox(useFixes, bounds);
+            int found = tree.search(searchBox).flatMap(
+                    new Func1<Entry<String, Geometry>, Observable<Entry<Object, Geometry>>>() {
+                        @Override
+                        public Observable<Entry<Object, Geometry>> call(
+                                Entry<String, Geometry> entry) {
+                            String filename = entry.value();
+                            System.out.println("reading " + filename);
+                            RTree<Object, Geometry> tree = readFromProto(new File(dir, filename),
+                                    ctx);
+                            System.out.println("loaded " + filename);
+                            return tree.search(searchBox);
+                        }
+                    }).count().toBlocking().single();
+            System.out.println("search found " + found);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static byte[] readBytes(File file) {
+        InputStream is = null;
+        try {
+            byte[] bytes = new byte[(int) file.length()];
+            is = new BufferedInputStream(new FileInputStream(file));
+            ByteStreams.readFully(is, bytes);
+            return bytes;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     private static final Func1<byte[], Position> deserialize = new Func1<byte[], Position>() {
@@ -354,7 +416,10 @@ public class RTree3DTest {
     private static void writeBytesToFile(byte[] bytes, File file, boolean zip) {
         OutputStream out = null;
         try {
-            out = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file)));
+            if (zip)
+                out = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file)));
+            else
+                out = new BufferedOutputStream(new FileOutputStream(file));
             out.write(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -414,7 +479,7 @@ public class RTree3DTest {
             // is leaf and has sub tree ids
             List<Entry<Object, Geometry>> entries = new ArrayList<Entry<Object, Geometry>>();
             for (SubTreeId id : node.getSubTreeIdsList()) {
-                entries.add(Entry.entry((Object) id, (Geometry) createBox(id.getMbb())));
+                entries.add(Entry.entry((Object) id.getId(), (Geometry) createBox(id.getMbb())));
             }
             return new Leaf<Object, Geometry>(entries, box, context);
         } else if (node.getChildrenCount() > 0) {
