@@ -221,7 +221,7 @@ public class RTree3DTest {
         // to). It's leaf nodes are uuids that correspond to serialized files in
         // dir for the rest of the r-tree at that leaf.
         {
-            for (int maxDepth = 8; maxDepth <= 8; maxDepth++) {
+            for (int maxDepth = 5; maxDepth <= 5; maxDepth++) {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
