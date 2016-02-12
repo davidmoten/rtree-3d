@@ -7,9 +7,7 @@ import static com.google.common.base.Optional.of;
 import java.util.List;
 
 import com.github.davidmoten.rtree3d.geometry.Box;
-import com.github.davidmoten.rtree3d.geometry.Circle;
 import com.github.davidmoten.rtree3d.geometry.Geometry;
-import com.github.davidmoten.rtree3d.geometry.Intersects;
 import com.github.davidmoten.rtree3d.geometry.Point;
 import com.github.davidmoten.rx.operators.OperatorBoundedPriorityQueue;
 import com.google.common.annotations.VisibleForTesting;
@@ -593,10 +591,6 @@ public final class RTree<T, S extends Geometry> {
      */
     public Observable<Entry<T, S>> search(final Point p) {
         return search(p.mbb());
-    }
-
-    public Observable<Entry<T, S>> search(Circle circle) {
-        return search(circle, Intersects.geometryIntersectsCircle);
     }
 
     /**

@@ -24,10 +24,6 @@ public final class Geometries {
         return Box.create(x1, y1, z1, x2, y2, z2);
     }
 
-    public static Circle circle(double x, double y, double radius) {
-        return Circle.create(x, y, radius);
-    }
-
     public static Box boxGeographic(double lon1, double lat1, double lon2, double lat2) {
         double x1 = normalizeLongitude(lon1);
         double x2 = normalizeLongitude(lon2);

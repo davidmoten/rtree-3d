@@ -32,6 +32,7 @@ import com.github.davidmoten.rtree3d.geometry.Geometry;
 import com.github.davidmoten.rtree3d.geometry.Point;
 import com.github.davidmoten.rtree3d.proto.PositionProtos.Position;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.Geom;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
 import com.github.davidmoten.rx.Functions;
@@ -72,39 +73,44 @@ public class RTree3DTest {
 
     @Test
     public void test() throws IOException {
-        //load entries, calculate bounds and normalize entries
-        Observable<Entry<Object, Point>> entries = getGreekEarthquake3DDataShuffled();
+        // load entries, calculate bounds and normalize entries
+        
         boolean useFixes = System.getProperty("fixes") != null;
+        Observable<Entry<Object, Point>> entries;
         if (useFixes) {
             entries = getFixesShuffled();
+        } else {
+            entries = getGreekEarthquake3DDataShuffled();
         }
+            
         final Box bounds = getBounds(entries);
         System.out.println(bounds);
         Observable<Entry<Object, Point>> normalized = normalize(entries, bounds);
-        
-        //create RTree
+
+        // create RTree
         int maxChildren = 4;
         RTree<Object, Point> tree = RTree.star().minChildren((maxChildren) / 2)
                 .maxChildren(maxChildren).create();
         tree = tree.add(normalized).last().toBlocking().single();
         System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
         System.out.println(tree.asString(3));
-        
-        //try search on RTrees
+
+        // try search on RTrees
         long t = System.currentTimeMillis();
-        int count = tree.search(Box.createNormalized(bounds, 39.0f, 22.0f, 0f, 40.0f, 23.0f, 3.15684946E11f)).count()
-                .toBlocking().single();
+        int count = tree.search(
+                Box.createNormalized(bounds, 39.0f, 22.0f, 0f, 40.0f, 23.0f, 3.15684946E11f))
+                .count().toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
         assertEquals(count, 118);
-        
-        //print out nodes as csv records for reading by R code and plotting
+
+        // print out nodes as csv records for reading by R code and plotting
         for (int depth = 0; depth <= 10; depth++) {
             print(tree.root().get(), depth);
             System.out.println("depth file written " + depth);
         }
-        
-        //serialize RTree
+
+        // serialize RTree
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
                 bounds);
         byte[] bytes = pNode.toByteArray();
@@ -116,7 +122,6 @@ public class RTree3DTest {
         System.out.println("zipped bytes = " + b2.size());
         System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
 
-        
         // now create a node with the top portion of the r-tree down to a depth
         // with a number of total nodes less than a given maximum (but close
         // to). It's leaf nodes are uuids that correspond to serialized files in
@@ -166,8 +171,8 @@ public class RTree3DTest {
 
     }
 
-    private static Observable<Entry<Object, Point>> normalize(Observable<Entry<Object, Point>> entries,
-            final Box bounds) {
+    private static Observable<Entry<Object, Point>> normalize(
+            Observable<Entry<Object, Point>> entries, final Box bounds) {
         return entries.map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
             @Override
             public Entry<Object, Point> call(Entry<Object, Point> entry) {
@@ -525,11 +530,19 @@ public class RTree3DTest {
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }
-                Box g = createBox(ent.getBox());
-                entries.add(
-                        Entry.entry((Object) p, (Geometry) Point.create(g.x1(), g.y1(), g.z1())));
+                Geometry g = createGeometry(ent.getGeometry());
+                entries.add(Entry.entry((Object) p, g));
             }
             return new Leaf<Object, Geometry>(entries, box, context);
+        }
+    }
+
+    private static Geometry createGeometry(Geom g) {
+        if (g.hasPoint()) {
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Point p = g.getPoint();
+            return Point.create(p.getX(), p.getY(), p.getZ());
+        } else {
+            return createBox(g.getBox());
         }
     }
 
@@ -587,9 +600,26 @@ public class RTree3DTest {
                 .setLongitude(bounds.invY(entry.geometry().y()))
                 .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z()))).build();
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry ent = com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry
-                .newBuilder().setBox(createProtoBox(entry.geometry().mbb()))
-                .setObject(p.toByteString()).build();
+                .newBuilder().setGeometry(createGeom(entry.geometry())).setObject(p.toByteString())
+                .build();
         return ent;
+    }
+
+    private static Geom createGeom(Geometry g) {
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Geom.Builder b = Geom.newBuilder();
+        if (g instanceof Box) {
+            b.setBox(createProtoBox((Box) g));
+        } else {
+            // is Point
+            b.setPoint(createProtoPoint((Point) g));
+        }
+        return b.build();
+    }
+
+    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Point createProtoPoint(Point g) {
+        return com.github.davidmoten.rtree3d.proto.RTreeProtos.Point.newBuilder().setX(g.x())
+                .setY(g.y()).setZ(g.z()).build();
+
     }
 
     public static void main(String[] args) throws ParseException {

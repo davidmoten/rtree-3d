@@ -2,10 +2,7 @@ package com.github.davidmoten.rtree3d;
 
 import static com.github.davidmoten.rtree3d.Entry.entry;
 import static com.github.davidmoten.rtree3d.geometry.Geometries.box;
-import static com.github.davidmoten.rtree3d.geometry.Geometries.circle;
 import static com.github.davidmoten.rtree3d.geometry.Geometries.point;
-import static com.github.davidmoten.rtree3d.geometry.Intersects.pointIntersectsCircle;
-import static com.github.davidmoten.rtree3d.geometry.Intersects.rectangleIntersectsCircle;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -28,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import com.github.davidmoten.rtree3d.geometry.Box;
-import com.github.davidmoten.rtree3d.geometry.Circle;
 import com.github.davidmoten.rtree3d.geometry.Geometries;
 import com.github.davidmoten.rtree3d.geometry.Geometry;
 import com.github.davidmoten.rtree3d.geometry.HasGeometry;
@@ -37,10 +33,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
-import rx.functions.Func2;
 
 public class RTreeTest {
 
@@ -750,57 +744,7 @@ public class RTreeTest {
         assertFalse(completed.get());
     }
 
-    @Test
-    public void testSearchWithIntersectsRectangleFunction() {
-        RTree<Integer, Box> tree = RTree.create();
-        tree.search(circle(0, 0, 1), rectangleIntersectsCircle);
-    }
-
-    @Test
-    public void testSearchWithIntersectsPointFunctionReturnsOne() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(0, 0));
-        Observable<Entry<Integer, Point>> entries = tree.search(circle(0, 0, 1),
-                pointIntersectsCircle);
-        assertEquals(1, (int) entries.count().toBlocking().single());
-    }
-
-    @Test
-    public void testSearchWithIntersectsPointFunctionReturnsNone() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(10, 10));
-        Observable<Entry<Integer, Point>> entries = tree.search(circle(0, 0, 1),
-                pointIntersectsCircle);
-        assertEquals(0, (int) entries.count().toBlocking().single());
-    }
-
-    @Test
-    public void testSearchWithDistanceFunctionIntersectsMbrButNotActualGeometry() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(0, 0)).add(2,
-                point(1, 1));
-
-        Observable<Entry<Integer, Point>> entries = tree.search(circle(0, 0, 1), 0.1,
-                distanceCircleToPoint);
-        assertEquals(1, (int) entries.count().toBlocking().single());
-    }
-
-    @Test
-    public void testSearchWithDistanceFunctionIntersectsMbrAndActualGeometry() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(0, 0)).add(2,
-                point(1, 1));
-
-        Observable<Entry<Integer, Point>> entries = tree.search(circle(0, 0, 1), 0.5,
-                distanceCircleToPoint);
-        assertEquals(2, (int) entries.count().toBlocking().single());
-    }
-
-    @Test
-    public void testSearchWithDistanceFunctionIntersectsNothing() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(0, 0)).add(2,
-                point(1, 1));
-
-        Observable<Entry<Integer, Point>> entries = tree.search(circle(10, 10, 1), 0.5,
-                distanceCircleToPoint);
-        assertEquals(0, (int) entries.count().toBlocking().single());
-    }
+    
 
     @Test
     public void calculateDepthOfEmptyTree() {
@@ -828,25 +772,6 @@ public class RTreeTest {
     }
 
     @Test
-    public void testSearchWithCircleFindsCentreOnly() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(1, 1))
-                .add(2, point(2, 2)).add(3, point(3, 3));
-        List<Entry<Integer, Point>> list = tree.search(Geometries.circle(2, 2, 1)).toList()
-                .toBlocking().single();
-        assertEquals(1, list.size());
-        assertEquals(2, (int) list.get(0).value());
-    }
-
-    @Test
-    public void testSearchWithCircleFindsAll() {
-        RTree<Integer, Point> tree = RTree.<Integer, Point> create().add(1, point(1, 1))
-                .add(2, point(2, 2)).add(3, point(3, 3));
-        List<Entry<Integer, Point>> list = tree.search(Geometries.circle(2, 2, 1.5)).toList()
-                .toBlocking().single();
-        assertEquals(3, list.size());
-    }
-
-    @Test
     public void testRTreeRootMbrWhenRTreeEmpty() {
         assertFalse(RTree.create().mbr().isPresent());
     }
@@ -858,12 +783,6 @@ public class RTreeTest {
         assertEquals(Geometries.box(1, 1, 0, 2, 2, 0), r.get());
     }
 
-    private static Func2<Point, Circle, Double> distanceCircleToPoint = new Func2<Point, Circle, Double>() {
-        @Override
-        public Double call(Point point, Circle circle) {
-            return circle.distance(point.mbb());
-        }
-    };
 
     private static <T> Func1<Entry<T, ?>, T> toValue() {
         return new Func1<Entry<T, ?>, T>() {
