@@ -95,13 +95,14 @@ public class RTree3DTest {
         System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
         System.out.println(tree.asString(3));
 
-        // try search on RTrees
+        // try search on RTree
         long t = System.currentTimeMillis();
         int count = tree.search(
                 Box.createNormalized(bounds, 39.0f, 22.0f, 0f, 40.0f, 23.0f, 3.15684946E11f))
                 .count().toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
+        //expect 118 records returned from search
         assertEquals(count, 118);
 
         // print out nodes as csv records for reading by R code and plotting
@@ -110,7 +111,7 @@ public class RTree3DTest {
             System.out.println("depth file written " + depth);
         }
 
-        // serialize RTree
+        // serialize root Node of an RTree
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
                 bounds);
         byte[] bytes = pNode.toByteArray();
@@ -133,9 +134,7 @@ public class RTree3DTest {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                        .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
-                        .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = createProtoBox(bounds);
                 com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
                         .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
                         .build();
