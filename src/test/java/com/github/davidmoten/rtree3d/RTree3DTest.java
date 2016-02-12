@@ -148,7 +148,7 @@ public class RTree3DTest {
                 long fileCount = 0;
                 for (File file : dir.listFiles()) {
                     if (!file.getName().equals("context")) {
-                        RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+                        RTree<Object, Geometry> tr = readTreeFromProto(file, tree.context());
                         if (file.getName().equals("top")) {
                             System.out.println("querying");
                             Box searchBox = createSearchBox(useFixes, bounds);
@@ -335,7 +335,7 @@ public class RTree3DTest {
             Box bounds = createBox(context.getBounds());
             final Context ctx = new Context(context.getMinChildren(), context.getMaxChildren(),
                     new SelectorRStar(), new SplitterRStar());
-            RTree<String, Geometry> tree = (RTree<String, Geometry>) (RTree<?, ?>) readFromProto(
+            RTree<String, Geometry> tree = (RTree<String, Geometry>) (RTree<?, ?>) readTreeFromProto(
                     new File(dir, "top"), ctx);
             final Box searchBox = createSearchBox(useFixes, bounds);
             long t = System.currentTimeMillis();
@@ -355,7 +355,7 @@ public class RTree3DTest {
                                     } catch (InterruptedException e) {
                                         throw new RuntimeException(e);
                                     }
-                                    RTree<Object, Geometry> tree = readFromProto(
+                                    RTree<Object, Geometry> tree = readTreeFromProto(
                                             new File(dir, filename), ctx);
                                     return tree.search(searchBox);
                                 }
@@ -390,7 +390,7 @@ public class RTree3DTest {
         }
     }
 
-    private static RTree<Object, Geometry> readFromProto(File file, Context context) {
+    private static RTree<Object, Geometry> readTreeFromProto(File file, Context context) {
         InputStream is = null;
         try {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
