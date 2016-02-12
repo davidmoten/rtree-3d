@@ -70,6 +70,12 @@ public final class Box implements Geometry, HasGeometry {
         return new Box(x1, y1, z1, x2, y2, z2);
     }
 
+    public static Box createNormalized(Box b, float x1, float y1, float z1, float x2, float y2,
+            float z2) {
+        return new Box(b.normX(x1), b.normY(y1), b.normZ(z1), b.normX(x2), b.normY(y2),
+                b.normZ(z2));
+    }
+
     @Override
     public boolean intersects(Box r) {
         return !(x1 > r.x2 || x2 < r.x1 || y1 > r.y2 || y2 < r.y1 || z1 > r.z2 || z2 < r.z1);

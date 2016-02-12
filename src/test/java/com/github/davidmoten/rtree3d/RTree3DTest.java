@@ -1,5 +1,7 @@
 package com.github.davidmoten.rtree3d;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,7 +57,7 @@ import rx.schedulers.Schedulers;
 public class RTree3DTest {
 
     @Test
-    public void testShuffle() throws FileNotFoundException {
+    public void createShuffle() throws FileNotFoundException {
         List<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < 38377; i++) {
             list.add(i);
@@ -70,6 +72,149 @@ public class RTree3DTest {
 
     @Test
     public void test() throws IOException {
+        //load entries, calculate bounds and normalize entries
+        Observable<Entry<Object, Point>> entries = getGreekEarthquake3DDataShuffled();
+        boolean useFixes = System.getProperty("fixes") != null;
+        if (useFixes) {
+            entries = getFixesShuffled();
+        }
+        final Box bounds = getBounds(entries);
+        System.out.println(bounds);
+        Observable<Entry<Object, Point>> normalized = normalize(entries, bounds);
+        
+        //create RTree
+        int maxChildren = 4;
+        RTree<Object, Point> tree = RTree.star().minChildren((maxChildren) / 2)
+                .maxChildren(maxChildren).create();
+        tree = tree.add(normalized).last().toBlocking().single();
+        System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
+        System.out.println(tree.asString(3));
+        
+        //try search on RTrees
+        long t = System.currentTimeMillis();
+        int count = tree.search(Box.createNormalized(bounds, 39.0f, 22.0f, 0f, 40.0f, 23.0f, 3.15684946E11f)).count()
+                .toBlocking().single();
+        t = System.currentTimeMillis() - t;
+        System.out.println("search=" + count + " in " + t + "ms");
+        assertEquals(count, 118);
+        
+        //print out nodes as csv records for reading by R code and plotting
+        for (int depth = 0; depth <= 10; depth++) {
+            print(tree.root().get(), depth);
+            System.out.println("depth file written " + depth);
+        }
+        
+        //serialize RTree
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
+                bounds);
+        byte[] bytes = pNode.toByteArray();
+        System.out.println("bytes in protobuf = " + bytes.length);
+        ByteArrayOutputStream b2 = new ByteArrayOutputStream();
+        GZIPOutputStream g = new GZIPOutputStream(b2);
+        g.write(bytes);
+        g.close();
+        System.out.println("zipped bytes = " + b2.size());
+        System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
+
+        
+        // now create a node with the top portion of the r-tree down to a depth
+        // with a number of total nodes less than a given maximum (but close
+        // to). It's leaf nodes are uuids that correspond to serialized files in
+        // dir for the rest of the r-tree at that leaf.
+        File dir = new File("target/tree");
+        dir.mkdirs();
+        {
+            for (int maxDepth = 3; maxDepth <= 3; maxDepth++) {
+                for (File f : dir.listFiles())
+                    f.delete();
+                System.out.println("writing protos for top max depth=" + maxDepth);
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
+                        .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
+                        .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
+                        .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
+                        .build();
+                writeBytesToFile(protoContext.toByteArray(), new File(dir, "context"), false);
+
+                writeNodeAsSplitProtos(tree.root().get(), bounds, maxDepth, dir);
+
+                System.out.println("reading from protos");
+                double sum = 0;
+                long fileCount = 0;
+                for (File file : dir.listFiles()) {
+                    if (!file.getName().equals("context")) {
+                        RTree<Object, Geometry> tr = readFromProto(file, tree.context());
+                        if (file.getName().equals("top")) {
+                            System.out.println("querying");
+                            Box searchBox = createSearchBox(useFixes, bounds);
+                            int c = tr.search(searchBox).count().toBlocking().single();
+                            System.out.println("found " + c + " in " + searchBox);
+                        } else {
+                            fileCount += 1;
+                            sum = sum + file.length();
+                        }
+                    }
+                }
+                System.out.println(
+                        "average sub-tree proto file size=" + Math.round(sum / fileCount) + "B");
+            }
+        }
+
+        // search
+        search(dir, useFixes);
+        System.out.println("finished");
+
+    }
+
+    private static Observable<Entry<Object, Point>> normalize(Observable<Entry<Object, Point>> entries,
+            final Box bounds) {
+        return entries.map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
+            @Override
+            public Entry<Object, Point> call(Entry<Object, Point> entry) {
+                return Entry.entry(entry.value(), bounds.normalize(entry.geometry()));
+            }
+        }).lift(Logging.<Entry<Object, Point>> logger().showCount().showMemory().every(100000)
+                .log());
+    }
+
+    private static Box getBounds(Observable<Entry<Object, Point>> entries) {
+        return entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
+            @Override
+            public Box call(Box box, Entry<Object, Point> p) {
+                if (box == null)
+                    return p.geometry().mbb();
+                else
+                    return Util.mbr(Lists.newArrayList(box, p.geometry().mbb()));
+            }
+        }).toBlocking().single();
+    }
+
+    private static Observable<Entry<Object, Point>> getFixesShuffled() {
+        Observable<Entry<Object, Point>> entries;
+        entries = BinaryFixes
+                .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
+                .map(new Func1<Fix, Entry<Object, Point>>() {
+                    @Override
+                    public Entry<Object, Point> call(Fix x) {
+                        return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
+                    }
+                }).take(10000000);
+        // shuffle entries
+        entries = entries.toList().flatMapIterable(
+                new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
+                    @Override
+                    public Iterable<Entry<Object, Point>> call(List<Entry<Object, Point>> list) {
+                        System.out.println("shuffling");
+                        Collections.shuffle(list);
+                        System.out.println("shuffled");
+                        return list;
+                    }
+                });
+        return entries;
+    }
+
+    private static Observable<Entry<Object, Point>> getGreekEarthquake3DDataShuffled()
+            throws IOException {
         final List<String> indexes = CharStreams.readLines(new InputStreamReader(
                 RTree3DTest.class.getResourceAsStream("/greek-earthquake-shuffle.txt")));
 
@@ -141,126 +286,7 @@ public class RTree3DTest {
 
                     }
                 });
-        boolean useFixes = System.getProperty("fixes") != null;
-        if (useFixes) {
-            entries = BinaryFixes
-                    .from(new File(System.getProperty("fixes")), true, BinaryFixesFormat.WITH_MMSI)
-                    .map(new Func1<Fix, Entry<Object, Point>>() {
-                        @Override
-                        public Entry<Object, Point> call(Fix x) {
-                            return Entry.entry(null, Point.create(x.lat(), x.lon(), x.time()));
-                        }
-                    }).take(10000000);
-            // shuffle entries
-            entries = entries.toList().flatMapIterable(
-                    new Func1<List<Entry<Object, Point>>, Iterable<Entry<Object, Point>>>() {
-                        @Override
-                        public Iterable<Entry<Object, Point>> call(
-                                List<Entry<Object, Point>> list) {
-                            System.out.println("shuffling");
-                            Collections.shuffle(list);
-                            System.out.println("shuffled");
-                            return list;
-                        }
-                    });
-        }
-
-        final Box bounds = entries.reduce(null, new Func2<Box, Entry<Object, Point>, Box>() {
-            @Override
-            public Box call(Box box, Entry<Object, Point> p) {
-                if (box == null)
-                    return p.geometry().mbb();
-                else
-                    return Util.mbr(Lists.newArrayList(box, p.geometry().mbb()));
-            }
-        }).toBlocking().single();
-
-        File dir = new File("target/tree");
-        dir.mkdirs();
-
-        Observable<Entry<Object, Point>> normalized = entries
-                .map(new Func1<Entry<Object, Point>, Entry<Object, Point>>() {
-                    @Override
-                    public Entry<Object, Point> call(Entry<Object, Point> entry) {
-                        return Entry.entry(entry.value(), bounds.normalize(entry.geometry()));
-                    }
-                })
-                //
-                .lift(Logging.<Entry<Object, Point>> logger().showCount().showMemory().every(100000)
-                        .log());
-        System.out.println(bounds);
-        int n = 4;
-
-        RTree<Object, Point> tree = RTree.minChildren((n) / 2).maxChildren(n).create();
-        tree = tree.add(normalized).last().toBlocking().single();
-        System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
-        System.out.println(tree.asString(3));
-        long t = System.currentTimeMillis();
-        int count = tree.search(Box.create(39.0, 22.0, 0, 40.0, 23.0, 3.15684946E11)).count()
-                .toBlocking().single();
-        t = System.currentTimeMillis() - t;
-        System.out.println("search=" + count + " in " + t + "ms");
-        for (int i = 0; i <= 10; i++) {
-            print(tree.root().get(), i);
-            System.out.println("depth file written " + i);
-        }
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
-                bounds);
-        byte[] bytes = pNode.toByteArray();
-        System.out.println("bytes in protobuf = " + bytes.length);
-        ByteArrayOutputStream b2 = new ByteArrayOutputStream();
-        GZIPOutputStream g = new GZIPOutputStream(b2);
-        g.write(bytes);
-        g.close();
-        System.out.println("zipped bytes = " + b2.size());
-
-        System.out.println(1000000.0 / b2.size() * tree.size() + " positions = 1MB gzipped");
-
-        // now create a node with the top portion of the r-tree down to a depth
-        // with a number of total nodes less than a given maximum (but close
-        // to). It's leaf nodes are uuids that correspond to serialized files in
-        // dir for the rest of the r-tree at that leaf.
-        {
-            for (int maxDepth = 5; maxDepth <= 5; maxDepth++) {
-                for (File f : dir.listFiles())
-                    f.delete();
-                System.out.println("writing protos for top max depth=" + maxDepth);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = com.github.davidmoten.rtree3d.proto.RTreeProtos.Box
-                        .newBuilder().setXMin(bounds.x1()).setXMax(bounds.x2()).setYMin(bounds.y1())
-                        .setYMax(bounds.y2()).setZMin(bounds.z1()).setZMax(bounds.z2()).build();
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
-                        .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
-                        .build();
-                writeBytesToFile(protoContext.toByteArray(), new File(dir, "context"), false);
-
-                writeNodeAsSplitProtos(tree.root().get(), bounds, maxDepth, dir);
-
-                System.out.println("reading from protos");
-                double sum = 0;
-                long fileCount = 0;
-                for (File file : dir.listFiles()) {
-                    if (!file.getName().equals("context")) {
-                        RTree<Object, Geometry> tr = readFromProto(file, tree.context());
-                        if (file.getName().equals("top")) {
-                            System.out.println("querying");
-                            Box searchBox = createSearchBox(useFixes, bounds);
-                            int c = tr.search(searchBox).count().toBlocking().single();
-                            System.out.println("found " + c + " in " + searchBox);
-                        } else {
-                            fileCount += 1;
-                            sum = sum + file.length();
-                        }
-                    }
-                }
-                System.out.println(
-                        "average sub-tree proto file size=" + Math.round(sum / fileCount) + "B");
-            }
-        }
-
-        // search
-        search(dir, useFixes);
-        System.out.println("finished");
-
+        return entries;
     }
 
     private Box createSearchBox(boolean useFixes, final Box bounds) {
