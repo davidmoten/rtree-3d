@@ -54,7 +54,7 @@ public class GreekEarthquakes {
                             double lat = Double.parseDouble(items[0]);
                             double lon = Double.parseDouble(items[1]);
                             return Observable.just(Entry.entry(new Object(),
-                                    Geometries.point(lat, lon,0)));
+                                    Geometries.point(lat, lon, 0)));
                         } else
                             return Observable.empty();
                     }
