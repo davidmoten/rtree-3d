@@ -8,9 +8,9 @@ public final class Geometries {
         // prevent instantiation
     }
 
-    public static Point point(double x, double y) {
-        return Point.create(x, y);
-    }
+//    public static Point point(double x, double y) {
+//        return Point.create(x, y);
+//    }
 
     public static Point point(double x, double y, double z) {
         return Point.create(x, y, z);
@@ -33,8 +33,8 @@ public final class Geometries {
         return box(x1, lat1, x2, lat2);
     }
 
-    public static Point pointGeographic(double lon, double lat) {
-        return point(normalizeLongitude(lon), lat);
+    public static Point pointGeographic(double lon, double lat, double z) {
+        return point(normalizeLongitude(lon), lat, z);
     }
 
     @VisibleForTesting

@@ -10,6 +10,7 @@ import com.github.davidmoten.rtree3d.SplitterRStar;
 import com.github.davidmoten.rtree3d.geometry.Geometries;
 import com.github.davidmoten.rtree3d.geometry.HasGeometry;
 import com.github.davidmoten.rtree3d.geometry.ListPair;
+import com.github.davidmoten.rtree3d.geometry.Point;
 import com.google.common.collect.Lists;
 
 public class SplitterRStarTest {
@@ -19,12 +20,16 @@ public class SplitterRStarTest {
 
         int minSize = 2;
         List<HasGeometry> list = Lists.newArrayList();
-        list.add(Geometries.point(1, 1).mbb());
-        list.add(Geometries.point(2, 2).mbb());
-        list.add(Geometries.point(3, 3).mbb());
-        list.add(Geometries.point(4, 4).mbb());
-        list.add(Geometries.point(5, 5).mbb());
+        list.add(point(1, 1).mbb());
+        list.add(point(2, 2).mbb());
+        list.add(point(3, 3).mbb());
+        list.add(point(4, 4).mbb());
+        list.add(point(5, 5).mbb());
         List<ListPair<HasGeometry>> pairs = SplitterRStar.getPairs(minSize, list);
         assertEquals(2, pairs.size());
+    }
+    
+    private static Point point(double x, double y) {
+        return Point.create(x,  y, 0);
     }
 }

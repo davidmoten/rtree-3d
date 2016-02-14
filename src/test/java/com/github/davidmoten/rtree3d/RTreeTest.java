@@ -410,7 +410,7 @@ public class RTreeTest {
 
     private void testBuiltTree(RTree<Object, Point> tree) {
         for (int i = 1; i <= 1000; i++) {
-            tree = tree.add(i, Geometries.point(i, i));
+            tree = tree.add(i, point(i, i));
         }
         assertEquals(1000, (int) tree.entries().count().toBlocking().single());
     }
@@ -617,7 +617,7 @@ public class RTreeTest {
     public void testAddOverload() {
         @SuppressWarnings("unchecked")
         RTree<Object, Geometry> tree = (RTree<Object, Geometry>) (RTree<?, ?>) create(3, 0);
-        tree = tree.add(123, Geometries.point(1, 2));
+        tree = tree.add(123, point(1, 2));
         assertEquals(1, (int) tree.entries().count().toBlocking().single());
     }
 
@@ -625,7 +625,7 @@ public class RTreeTest {
     public void testDeleteOverload() {
         @SuppressWarnings("unchecked")
         RTree<Object, Geometry> tree = (RTree<Object, Geometry>) (RTree<?, ?>) create(3, 0);
-        tree = tree.add(123, Geometries.point(1, 2)).delete(123, Geometries.point(1, 2));
+        tree = tree.add(123, point(1, 2)).delete(123, point(1, 2));
         assertEquals(0, (int) tree.entries().count().toBlocking().single());
     }
 
@@ -782,6 +782,10 @@ public class RTreeTest {
                 .mbr();
         assertEquals(Geometries.box(1, 1, 0, 2, 2, 0), r.get());
     }
+    
+    private static Point point(double x, double y) {
+        return Point.create(x, y,0);
+    }
 
 
     private static <T> Func1<Entry<T, ?>, T> toValue() {
@@ -800,7 +804,7 @@ public class RTreeTest {
 
         double randomY = Math.round(Math.random() * 100);
 
-        return Point.create(randomX, randomY);
+        return Point.create(randomX, randomY, 0);
 
     }
 

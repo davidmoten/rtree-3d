@@ -286,7 +286,7 @@ public class BenchmarksRTree {
     }
 
     private void insertPoint(RTree<Object, Point> tree) {
-        tree.add(new Object(), Geometries.point(Math.random() * 1000, Math.random() * 1000));
+        tree.add(new Object(), Geometries.point(Math.random() * 1000, Math.random() * 1000, 0));
     }
 
     public static void main(String[] args) {

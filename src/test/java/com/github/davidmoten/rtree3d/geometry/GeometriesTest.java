@@ -101,8 +101,9 @@ public class GeometriesTest {
 
     @Test
     public void testPointLatLong() {
-        Point point = Geometries.pointGeographic(181, 25);
+        Point point = Geometries.pointGeographic(181, 25, 0);
         assertEquals(-179, point.x(), PRECISION);
         assertEquals(25, point.y(), PRECISION);
     }
+    
 }

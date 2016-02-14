@@ -18,10 +18,10 @@ import com.github.davidmoten.rtree3d.geometry.Point;
 
 public class LatLongExampleTest {
 
-    private static final Point sydney = Geometries.point(151.2094, -33.86);
-    private static final Point canberra = Geometries.point(149.1244, -35.3075);
-    private static final Point brisbane = Geometries.point(153.0278, -27.4679);
-    private static final Point bungendore = Geometries.point(149.4500, -35.2500);
+    private static final Point sydney = Geometries.point(151.2094, -33.86,0);
+    private static final Point canberra = Geometries.point(149.1244, -35.3075,0);
+    private static final Point brisbane = Geometries.point(153.0278, -27.4679,0);
+    private static final Point bungendore = Geometries.point(149.4500, -35.2500,0);
 
     @Test
     public void testLatLongExample() {
