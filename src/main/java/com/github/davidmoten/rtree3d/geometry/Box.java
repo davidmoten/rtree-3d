@@ -53,15 +53,6 @@ public final class Box implements Geometry, HasGeometry {
                 Math.max(x2, r.x2), Math.max(y2, r.y2), Math.max(z2, r.z2));
     }
 
-    public static Box create(double x1, double y1, double x2, double y2) {
-        return create((float) x1, (float) y1, (float) x2, (float) y2);
-    }
-
-    public static Box create(float x1, float y1, float x2, float y2) {
-        // z size always one
-        return new Box(x1, y1, 0, x2, y2, 1);
-    }
-
     public static Box create(double x1, double y1, double z1, double x2, double y2, double z2) {
         return new Box((float) x1, (float) y1, (float) z1, (float) x2, (float) y2, (float) z2);
     }

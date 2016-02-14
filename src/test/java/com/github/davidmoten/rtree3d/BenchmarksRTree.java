@@ -247,17 +247,17 @@ public class BenchmarksRTree {
 
     private void search(RTree<Object, Box> tree) {
         // returns 10 results
-        tree.search(Geometries.box(500, 500, 630, 630)).subscribe();
+        tree.search(Geometries.box(500, 500, 0, 630, 630, 1)).subscribe();
     }
 
     private void searchGreek(RTree<Object, Point> tree) {
         // should return 22 results
-        tree.search(Geometries.box(40, 27.0, 40.5, 27.5)).subscribe();
+        tree.search(Geometries.box(40, 27.0, 0, 40.5, 27.5, 1)).subscribe();
     }
 
     private void searchGreekWithBackpressure(RTree<Object, Point> tree) {
         // should return 22 results
-        tree.search(Geometries.box(40, 27.0, 40.5, 27.5)).subscribe(new Subscriber<Object>() {
+        tree.search(Geometries.box(40, 27.0, 0, 40.5, 27.5, 1)).subscribe(new Subscriber<Object>() {
 
             @Override
             public void onStart() {

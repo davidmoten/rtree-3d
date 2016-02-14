@@ -20,7 +20,7 @@ public class UtilTest {
     
     @Test
     public void testMbrWithNegativeValues() {
-        Box r = Geometries.box(-2,-2,-1,-1);
+        Box r = Geometries.box(-2,-2, 0,-1,-1, 1);
         Box mbr = Util.mbr(Collections.singleton(r));
         assertEquals(r,mbr);
         System.out.println(r);

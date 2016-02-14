@@ -22,7 +22,7 @@ public class Utilities {
                 String[] items = line.split(" ");
                 double x = Double.parseDouble(items[0]);
                 double y = Double.parseDouble(items[1]);
-                list.add(Entry.entry(new Object(), Geometries.box(x, y, x + 1, y + 1)));
+                list.add(Entry.entry(new Object(), Geometries.box(x, y, 0, x + 1, y + 1, 1)));
             }
             br.close();
         } catch (IOException e) {

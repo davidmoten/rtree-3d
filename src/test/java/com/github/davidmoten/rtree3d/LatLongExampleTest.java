@@ -111,7 +111,7 @@ public class LatLongExampleTest {
         Position east = from.predict(distanceKm, 90);
         Position west = from.predict(distanceKm, 270);
 
-        return Geometries.box(west.getLon(), south.getLat(), east.getLon(), north.getLat());
+        return Geometries.box(west.getLon(), south.getLat(), 0, east.getLon(), north.getLat(), 1);
     }
 
     private static <T> GeoCircleValue<T> createGeoCircleValue(Point point, double radiusKm, T value) {

@@ -12,21 +12,17 @@ public final class Geometries {
         return Point.create(x, y, z);
     }
 
-    public static Box box(double x1, double y1, double x2, double y2) {
-        return Box.create(x1, y1, x2, y2);
-    }
-
     public static Box box(double x1, double y1, double z1, double x2, double y2, double z2) {
         return Box.create(x1, y1, z1, x2, y2, z2);
     }
 
-    public static Box boxGeographic(double lon1, double lat1, double lon2, double lat2) {
+    public static Box boxGeographic(double lon1, double lat1, double z1, double lon2, double lat2, double z2) {
         double x1 = normalizeLongitude(lon1);
         double x2 = normalizeLongitude(lon2);
         if (x2 < x1) {
             x2 += 360;
         }
-        return box(x1, lat1, x2, lat2);
+        return box(x1, lat1, z1, x2, lat2, z2);
     }
 
     public static Point pointGeographic(double lon, double lat, double z) {

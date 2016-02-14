@@ -27,8 +27,8 @@ public class LeafTest {
 
     @Test
     public void testMbr() {
-        Box r1 = Geometries.box(0, 1, 3, 5);
-        Box r2 = Geometries.box(1, 2, 4, 6);
+        Box r1 = Geometries.box(0, 1, 0, 3, 5, 1);
+        Box r2 = Geometries.box(1, 2, 0, 4, 6, 1);
         @SuppressWarnings("unchecked")
         Box r = new Leaf<Object, Box>(Arrays.asList(Entry.entry(new Object(), r1),
                 Entry.entry(new Object(), r2)), context).geometry().mbb();

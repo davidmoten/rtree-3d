@@ -1,6 +1,5 @@
 package com.github.davidmoten.rtree3d.geometry;
 
-import static com.github.davidmoten.rtree3d.geometry.Geometries.box;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -136,6 +135,10 @@ public class RectangleTest {
         Box b = box(20, 20, 40, 40);
         assertTrue(a.intersects(b));
         assertTrue(b.intersects(a));
+    }
+    
+    private static Box box(double x1, double y1, double x2, double y2) {
+        return Box.create(x1, y1, 0, x2, y2, 1);
     }
     
 }

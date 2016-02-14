@@ -20,7 +20,7 @@ public class PointTest {
     @Test
     public void testDistanceToRectangle() {
         Point p1 = point(1, 2);
-        Box r = Geometries.box(4, 6, 4, 6);
+        Box r = Geometries.box(4, 6, 0, 4, 6, 1);
         assertEquals(5, p1.distance(r), PRECISION);
     }
 

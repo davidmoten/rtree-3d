@@ -85,7 +85,7 @@ public class GeometriesTest {
 
     @Test
     public void testRectangleLatLong() {
-        Box r = Geometries.boxGeographic(10, -10, 5, 10);
+        Box r = Geometries.boxGeographic(10, -10, 0, 5, 10, 1);
         assertEquals(10, r.x1(), PRECISION);
         assertEquals(365, r.x2(), PRECISION);
         assertEquals(-10, r.y1(), PRECISION);
@@ -94,7 +94,7 @@ public class GeometriesTest {
 
     @Test
     public void testRectangleLatLong2() {
-        Box r = Geometries.boxGeographic(5, -10, 10, 10);
+        Box r = Geometries.boxGeographic(5, -10, 0, 10, 10, 1);
         assertEquals(5, r.x1(), PRECISION);
         assertEquals(10, r.x2(), PRECISION);
     }

@@ -1,7 +1,6 @@
 package com.github.davidmoten.rtree3d;
 
 import static com.github.davidmoten.rtree3d.Entry.entry;
-import static com.github.davidmoten.rtree3d.geometry.Geometries.box;
 import static com.github.davidmoten.rtree3d.geometry.Geometries.point;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -525,7 +524,7 @@ public class RTreeTest {
 
         // do search
         System.out.println("found="
-                + tree.search(Geometries.box(40, 27.0, 40.5, 27.5)).count().toBlocking().single());
+                + tree.search(Geometries.box(40, 27.0, 0, 40.5, 27.5, 1)).count().toBlocking().single());
 
         RTree<Object, Point> tree2 = RTree.maxChildren(maxChildren).star().<Object, Point> create()
                 .add(entries);
@@ -697,6 +696,10 @@ public class RTreeTest {
             // System.out.println("res1=" + res1 + ",res2=" + res2);
             assertEquals(res1.size(), res2.size());
         }
+    }
+    
+    private static Box box(double x1, double y1, double x2, double y2) {
+        return Box.create(x1, y1, 0, x2, y2, 1);
     }
 
     @Test

@@ -126,7 +126,7 @@ public class QuadraticSplitterTest {
     }
     
     private static Mbr r(int n) {
-        return new Mbr(Box.create(n, n, n + 1, n + 1));
+        return new Mbr(Box.create(n, n, 0, n + 1, n + 1, 1));
     }
 
 }
