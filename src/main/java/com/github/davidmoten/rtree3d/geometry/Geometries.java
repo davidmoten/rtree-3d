@@ -8,10 +8,6 @@ public final class Geometries {
         // prevent instantiation
     }
 
-//    public static Point point(double x, double y) {
-//        return Point.create(x, y);
-//    }
-
     public static Point point(double x, double y, double z) {
         return Point.create(x, y, z);
     }
