@@ -391,7 +391,7 @@ public class RTree3DTest {
         }
     }
 
-    private static <S extends Geometry> RTree<String, S> readUpper(File file) {
+    private static  RTree<String, Box> readUpper(File file) {
         InputStream is = null;
         try {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
@@ -399,7 +399,7 @@ public class RTree3DTest {
                     .parseFrom(is);
             final Context ctx = new Context(tree.getContext().getMinChildren(),
                     tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
-            Node<String, S> node = toUpperNode(tree.getRoot(), ctx);
+            Node<String, Box> node = toUpperNode(tree.getRoot(), ctx);
             is.close();
             return RTree.create(node, ctx);
         } catch (IOException e) {
@@ -463,24 +463,24 @@ public class RTree3DTest {
         }
     }
 
-    private static <S extends Geometry> Node<String, S> toUpperNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+    private static Node<String, Box> toUpperNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
         Box box = createBox(node.getMbb());
         if (node.getSubTreeIdsCount() > 0) {
             // is leaf and has sub tree ids
-            List<Entry<String, S>> entries = new ArrayList<Entry<String, S>>();
+            List<Entry<String, Box>> entries = new ArrayList<Entry<String, Box>>();
             for (SubTreeId id : node.getSubTreeIdsList()) {
                 //TODO fix cast
-                entries.add(Entry.entry(id.getId(), (S) createBox(id.getMbb())));
+                entries.add(Entry.entry(id.getId(), createBox(id.getMbb())));
             }
-            return new Leaf<String, S>(entries, box, context);
+            return new Leaf<String, Box>(entries, box, context);
         } else {
             // is non-leaf
-            List<Node<String, S>> children = new ArrayList<Node<String , S>>();
+            List<Node<String, Box>> children = new ArrayList<Node<String , Box>>();
             for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
-                Node<String , S> nd = toUpperNode(n, context);
+                Node<String , Box> nd = toUpperNode(n, context);
                 children.add(nd);
             }
-            return new NonLeaf<String, S>(children, box, context);
+            return new NonLeaf<String, Box>(children, box, context);
         } 
     }
 
