@@ -35,10 +35,10 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Geom;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
-import com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree;
 import com.github.davidmoten.rx.Functions;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
@@ -414,6 +414,55 @@ public class RTree3DTest {
         }
     }
     
+    private static <T, S extends Geometry> RTree<T, S> readLower(File file, Func1<byte[], T> deserializer) {
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree tree = com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree
+                    .parseFrom(is);
+            final Context ctx = new Context(tree.getContext().getMinChildren(),
+                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
+            Node<T, S> node = toLowerNode(tree.getRoot(), ctx, deserializer);
+            is.close();
+            return RTree.create(node, ctx);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null)
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+        }
+    }
+    
+
+    private static <T, S extends Geometry> Node<T, S> toLowerNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
+            Context context, Func1<? super byte[],? extends T> deserializer) {
+        Preconditions.checkArgument(node.getSubTreeIdsCount() > 0) ;
+        Box box = createBox(node.getMbb());
+        if (node.getChildrenCount() > 0) {
+            // is non-leaf
+            List<Node<T, S>> children = new ArrayList<Node<T, S>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
+                Node<T, S> nd = toLowerNode(n, context, deserializer);
+                children.add(nd);
+            }
+            return new NonLeaf<T, S>(children, box, context);
+        } else {
+            // is leaf
+            List<Entry<T, S>> entries = new ArrayList<Entry<T, S>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry ent : node
+                    .getEntriesList()) {
+                T t = deserializer.call(ent.getObject().toByteArray());
+                S g = (S) createGeometry(ent.getGeometry());
+                entries.add(Entry.entry(t, g));
+            }
+            return new Leaf<T, S>(entries, box, context);
+        }
+    }
+
     private static <S extends Geometry> Node<String, S> toUpperNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
         Box box = createBox(node.getMbb());
         if (node.getSubTreeIdsCount() > 0) {
