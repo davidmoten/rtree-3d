@@ -35,6 +35,7 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Geom;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree;
 import com.github.davidmoten.rx.Functions;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
@@ -74,7 +75,7 @@ public class RTree3DTest {
     @Test
     public void test() throws IOException {
         // load entries, calculate bounds and normalize entries
-        
+
         boolean useFixes = System.getProperty("fixes") != null;
         Observable<Entry<Object, Point>> entries;
         if (useFixes) {
@@ -82,7 +83,7 @@ public class RTree3DTest {
         } else {
             entries = getGreekEarthquake3DDataShuffled();
         }
-            
+
         final Box bounds = getBounds(entries);
         System.out.println(bounds);
         Observable<Entry<Object, Point>> normalized = normalize(entries, bounds);
@@ -102,7 +103,7 @@ public class RTree3DTest {
                 .count().toBlocking().single();
         t = System.currentTimeMillis() - t;
         System.out.println("search=" + count + " in " + t + "ms");
-        //expect 118 records returned from search
+        // expect 118 records returned from search
         assertEquals(count, 118);
 
         // print out nodes as csv records for reading by R code and plotting
@@ -134,7 +135,8 @@ public class RTree3DTest {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = createProtoBox(bounds);
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = createProtoBox(
+                        bounds);
                 com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
                         .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
                         .build();
@@ -387,6 +389,50 @@ public class RTree3DTest {
                 }
             }
         }
+    }
+
+    private static <S extends Geometry> RTree<String, S> readUpper(File file) {
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree tree = com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree
+                    .parseFrom(is);
+            final Context ctx = new Context(tree.getContext().getMinChildren(),
+                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
+            Node<String, S> node = toUpperNode(tree.getRoot(), ctx);
+            is.close();
+            return RTree.create(node, ctx);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null)
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+        }
+    }
+    
+    private static <S extends Geometry> Node<String, S> toUpperNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+        Box box = createBox(node.getMbb());
+        if (node.getSubTreeIdsCount() > 0) {
+            // is leaf and has sub tree ids
+            List<Entry<String, S>> entries = new ArrayList<Entry<String, S>>();
+            for (SubTreeId id : node.getSubTreeIdsList()) {
+                //TODO fix cast
+                entries.add(Entry.entry(id.getId(), (S) createBox(id.getMbb())));
+            }
+            return new Leaf<String, S>(entries, box, context);
+        } else {
+            // is non-leaf
+            List<Node<String, S>> children = new ArrayList<Node<String , S>>();
+            for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
+                Node<String , S> nd = toUpperNode(n, context);
+                children.add(nd);
+            }
+            return new NonLeaf<String, S>(children, box, context);
+        } 
     }
 
     private static RTree<Object, Geometry> readTreeFromProto(File file, Context context) {
