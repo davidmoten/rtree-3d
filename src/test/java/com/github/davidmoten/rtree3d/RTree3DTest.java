@@ -151,17 +151,15 @@ public class RTree3DTest {
                 double sum = 0;
                 long fileCount = 0;
                 for (File file : dir.listFiles()) {
-                    if (!file.getName().equals("context")) {
+                    if (file.getName().equals("top")) {
                         RTree<Object, Geometry> tr = readTreeFromProto(file, tree.context());
-                        if (file.getName().equals("top")) {
-                            System.out.println("querying");
-                            Box searchBox = createSearchBox(useFixes, bounds);
-                            int c = tr.search(searchBox).count().toBlocking().single();
-                            System.out.println("found " + c + " in " + searchBox);
-                        } else {
-                            fileCount += 1;
-                            sum = sum + file.length();
-                        }
+                        System.out.println("querying");
+                        Box searchBox = createSearchBox(useFixes, bounds);
+                        int c = tr.search(searchBox).count().toBlocking().single();
+                        System.out.println("found " + c + " in " + searchBox);
+                    } else {
+                        fileCount += 1;
+                        sum = sum + file.length();
                     }
                 }
                 System.out.println(
@@ -450,7 +448,6 @@ public class RTree3DTest {
                     tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar(),
                     Optional.of(createBox(tree.getContext().getBounds())));
             Node<String, Box> node = toUpperNode(tree.getRoot(), ctx);
-            is.close();
             return RTree.create(node, ctx);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -474,7 +471,6 @@ public class RTree3DTest {
             final Context ctx = new Context(tree.getContext().getMinChildren(),
                     tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
             Node<T, S> node = toLowerNode(tree.getRoot(), ctx, deserializer);
-            is.close();
             return RTree.create(node, ctx);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -542,7 +538,6 @@ public class RTree3DTest {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node = com.github.davidmoten.rtree3d.proto.RTreeProtos.Node
                     .parseFrom(is);
-            is.close();
             Node<Object, Geometry> root = toNode(node, context);
             RTree<Object, Geometry> tree = RTree.create(root, context);
             return tree;
