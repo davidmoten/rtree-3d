@@ -35,13 +35,16 @@ import com.github.davidmoten.rtree3d.proto.RTreeProtos;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Geom;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.Node.Builder;
 import com.github.davidmoten.rtree3d.proto.RTreeProtos.SubTreeId;
+import com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree;
 import com.github.davidmoten.rx.Functions;
 import com.github.davidmoten.rx.Strings;
 import com.github.davidmoten.rx.slf4j.Logging;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import au.gov.amsa.risky.format.BinaryFixes;
@@ -91,7 +94,7 @@ public class RTree3DTest {
         // create RTree
         int maxChildren = 4;
         RTree<Object, Point> tree = RTree.star().minChildren((maxChildren) / 2)
-                .maxChildren(maxChildren).create();
+                .maxChildren(maxChildren).bounds(bounds).create();
         tree = tree.add(normalized).last().toBlocking().single();
         System.out.format("tree size=%s, depth=%s\\n", tree.size(), tree.calculateDepth());
         System.out.println(tree.asString(3));
@@ -112,10 +115,16 @@ public class RTree3DTest {
             System.out.println("depth file written " + depth);
         }
 
-        // serialize root Node of an RTree
-        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node pNode = toProtoNode(tree.root().get(),
-                bounds);
-        byte[] bytes = pNode.toByteArray();
+        Func1<Object, byte[]> serializer = new Func1<Object, byte[]>() {
+
+            @Override
+            public byte[] call(Object t) {
+                return new byte[] {};
+            }
+        };
+        // serialize RTree
+        Tree protoTree = createProtoTree(tree, serializer);
+        byte[] bytes = protoTree.toByteArray();
         System.out.println("bytes in protobuf = " + bytes.length);
         ByteArrayOutputStream b2 = new ByteArrayOutputStream();
         GZIPOutputStream g = new GZIPOutputStream(b2);
@@ -142,7 +151,7 @@ public class RTree3DTest {
                         .build();
                 writeBytesToFile(protoContext.toByteArray(), new File(dir, "context"), false);
 
-                writeNodeAsSplitProtos(tree.root().get(), bounds, maxDepth, dir);
+                writeNodeAsSplitProtos(tree.root().get(), maxDepth, dir, serializer);
 
                 System.out.println("reading from protos");
                 double sum = 0;
@@ -328,47 +337,35 @@ public class RTree3DTest {
 
     private void search(final File dir, boolean useFixes) {
         System.out.println("searching");
-        try {
-            final Scheduler scheduler = Schedulers.from(Executors.newFixedThreadPool(10));
-
-            com.github.davidmoten.rtree3d.proto.RTreeProtos.Context context = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
-                    .parseFrom(readBytes(new File(dir, "context")));
-            Box bounds = createBox(context.getBounds());
-            final Context ctx = new Context(context.getMinChildren(), context.getMaxChildren(),
-                    new SelectorRStar(), new SplitterRStar());
-            RTree<String, Geometry> tree = (RTree<String, Geometry>) (RTree<?, ?>) readTreeFromProto(
-                    new File(dir, "top"), ctx);
-            final Box searchBox = createSearchBox(useFixes, bounds);
-            long t = System.currentTimeMillis();
-            int found = tree.search(searchBox).flatMap(
-                    new Func1<Entry<String, Geometry>, Observable<Entry<Object, Geometry>>>() {
-                        @Override
-                        public Observable<Entry<Object, Geometry>> call(
-                                final Entry<String, Geometry> entry) {
-                            return Observable
-                                    .defer(new Func0<Observable<Entry<Object, Geometry>>>() {
-                                @Override
-                                public Observable<Entry<Object, Geometry>> call() {
-                                    String filename = entry.value();
-                                    System.out.println("reading " + filename);
-                                    try {
-                                        Thread.sleep(10);
-                                    } catch (InterruptedException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                    RTree<Object, Geometry> tree = readTreeFromProto(
-                                            new File(dir, filename), ctx);
-                                    return tree.search(searchBox);
+        final Scheduler scheduler = Schedulers.from(Executors.newFixedThreadPool(10));
+        final RTree<String, Box> tree = readUpper(new File(dir, "top"));
+        final Box searchBox = createSearchBox(useFixes, tree.context().bounds().get());
+        long t = System.currentTimeMillis();
+        int found = tree.search(searchBox)
+                .flatMap(new Func1<Entry<String, Box>, Observable<Entry<Object, Geometry>>>() {
+                    @Override
+                    public Observable<Entry<Object, Geometry>> call(
+                            final Entry<String, Box> entry) {
+                        return Observable.defer(new Func0<Observable<Entry<Object, Geometry>>>() {
+                            @Override
+                            public Observable<Entry<Object, Geometry>> call() {
+                                String filename = entry.value();
+                                System.out.println("reading " + filename);
+                                try {
+                                    Thread.sleep(10);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
                                 }
-                            }).subscribeOn(scheduler);
+                                RTree<Object, Geometry> tr = readTreeFromProto(
+                                        new File(dir, filename), tree.context());
+                                return tr.search(searchBox);
+                            }
+                        }).subscribeOn(scheduler);
 
-                        }
-                    }).count().toBlocking().single();
-            System.out.println(
-                    "search found " + found + " in " + (System.currentTimeMillis() - t) + "ms");
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
+                    }
+                }).count().toBlocking().single();
+        System.out.println(
+                "search found " + found + " in " + (System.currentTimeMillis() - t) + "ms");
     }
 
     private static byte[] readBytes(File file) {
@@ -391,14 +388,33 @@ public class RTree3DTest {
         }
     }
 
-    private static  RTree<String, Box> readUpper(File file) {
+    private static <T, S extends Geometry> Tree createProtoTree(RTree<T, S> tree,
+            Func1<? super T, byte[]> serializer) {
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Context c = createProtoContext(
+                tree.context());
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node root = createProtoNode(
+                tree.root().get(), serializer);
+        return Tree.newBuilder().setContext(c).setRoot(root).build();
+    }
+
+    private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Context createProtoContext(
+            Context context) {
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Box b = createProtoBox(
+                context.bounds().get());
+        return com.github.davidmoten.rtree3d.proto.RTreeProtos.Context.newBuilder().setBounds(b)
+                .setMinChildren(context.minChildren()).setMaxChildren(context.maxChildren())
+                .build();
+    }
+
+    private static RTree<String, Box> readUpper(File file) {
         InputStream is = null;
         try {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree tree = com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree
                     .parseFrom(is);
             final Context ctx = new Context(tree.getContext().getMinChildren(),
-                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
+                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar(),
+                    Optional.of(createBox(tree.getContext().getBounds())));
             Node<String, Box> node = toUpperNode(tree.getRoot(), ctx);
             is.close();
             return RTree.create(node, ctx);
@@ -413,8 +429,9 @@ public class RTree3DTest {
                 }
         }
     }
-    
-    private static <T, S extends Geometry> RTree<T, S> readLower(File file, Func1<byte[], T> deserializer) {
+
+    private static <T, S extends Geometry> RTree<T, S> readLower(File file,
+            Func1<byte[], T> deserializer) {
         InputStream is = null;
         try {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
@@ -436,11 +453,11 @@ public class RTree3DTest {
                 }
         }
     }
-    
 
-    private static <T, S extends Geometry> Node<T, S> toLowerNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node,
-            Context context, Func1<? super byte[],? extends T> deserializer) {
-        Preconditions.checkArgument(node.getSubTreeIdsCount() > 0) ;
+    private static <T, S extends Geometry> Node<T, S> toLowerNode(
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context,
+            Func1<? super byte[], ? extends T> deserializer) {
+        Preconditions.checkArgument(node.getSubTreeIdsCount() > 0);
         Box box = createBox(node.getMbb());
         if (node.getChildrenCount() > 0) {
             // is non-leaf
@@ -463,25 +480,26 @@ public class RTree3DTest {
         }
     }
 
-    private static Node<String, Box> toUpperNode(com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
+    private static Node<String, Box> toUpperNode(
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node, Context context) {
         Box box = createBox(node.getMbb());
         if (node.getSubTreeIdsCount() > 0) {
             // is leaf and has sub tree ids
             List<Entry<String, Box>> entries = new ArrayList<Entry<String, Box>>();
             for (SubTreeId id : node.getSubTreeIdsList()) {
-                //TODO fix cast
+                // TODO fix cast
                 entries.add(Entry.entry(id.getId(), createBox(id.getMbb())));
             }
             return new Leaf<String, Box>(entries, box, context);
         } else {
             // is non-leaf
-            List<Node<String, Box>> children = new ArrayList<Node<String , Box>>();
+            List<Node<String, Box>> children = new ArrayList<Node<String, Box>>();
             for (com.github.davidmoten.rtree3d.proto.RTreeProtos.Node n : node.getChildrenList()) {
-                Node<String , Box> nd = toUpperNode(n, context);
+                Node<String, Box> nd = toUpperNode(n, context);
                 children.add(nd);
             }
             return new NonLeaf<String, Box>(children, box, context);
-        } 
+        }
     }
 
     private static RTree<Object, Geometry> readTreeFromProto(File file, Context context) {
@@ -511,18 +529,18 @@ public class RTree3DTest {
                 b.getZMax());
     }
 
-    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNode(
-            Node<Object, Point> node, Box bounds) {
+    private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Node createProtoNode(
+            Node<T, S> node, Func1<? super T, byte[]> serializer) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (node instanceof Leaf) {
-            for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
-                b.addEntries(createProtoEntry(bounds, entry));
+            for (Entry<T, S> entry : ((Leaf<T, S>) node).entries()) {
+                b.addEntries(createProtoEntry(entry, serializer));
             }
         } else {
             // is NonLeaf
-            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
-            for (Node<Object, Point> child : n.children()) {
-                b.addChildren(toProtoNode(child, bounds));
+            NonLeaf<T, S> n = (NonLeaf<T, S>) node;
+            for (Node<T, S> child : n.children()) {
+                b.addChildren(createProtoNode(child, serializer));
             }
         }
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Box box = createProtoBox(
@@ -531,9 +549,9 @@ public class RTree3DTest {
         return b.build();
     }
 
-    private static void writeNodeAsSplitProtos(Node<Object, Point> node, Box bounds, int maxDepth,
-            File dir) {
-        writeBytesToFile(toProtoNodeSplit(node, bounds, 0, maxDepth, dir).toByteArray(),
+    private static <T, S extends Geometry> void writeNodeAsSplitProtos(Node<T, S> node,
+            int maxDepth, File dir, Func1<? super T, byte[]> serializer) {
+        writeBytesToFile(createProtoNodeSplit(node, 0, maxDepth, dir, serializer).toByteArray(),
                 new File(dir, "top"), true);
     }
 
@@ -557,25 +575,26 @@ public class RTree3DTest {
         }
     }
 
-    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Node toProtoNodeSplit(
-            Node<Object, Point> node, Box bounds, int depth, int maxDepth, File dir) {
+    private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Node createProtoNodeSplit(
+            Node<T, S> node, int depth, int maxDepth, File dir,
+            Func1<? super T, byte[]> serializer) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
-            for (Entry<Object, Point> entry : ((Leaf<Object, Point>) node).entries()) {
-                b.addEntries(createProtoEntry(bounds, entry));
+            for (Entry<T, S> entry : ((Leaf<T, S>) node).entries()) {
+                b.addEntries(createProtoEntry(entry, serializer));
             }
         } else if (depth < maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
-            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
-            for (Node<Object, Point> child : n.children()) {
-                b.addChildren(toProtoNodeSplit(child, bounds, depth + 1, maxDepth, dir));
+            NonLeaf<T, S> n = (NonLeaf<T, S>) node;
+            for (Node<T, S> child : n.children()) {
+                b.addChildren(createProtoNodeSplit(child, depth + 1, maxDepth, dir, serializer));
             }
         } else if (depth == maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
-            NonLeaf<Object, Point> n = (NonLeaf<Object, Point>) node;
-            for (Node<Object, Point> child : n.children()) {
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Node proto = toProtoNode(child,
-                        bounds);
+            NonLeaf<T, S> n = (NonLeaf<T, S>) node;
+            for (Node<T, S> child : n.children()) {
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Node proto = createProtoNode(child,
+                        serializer);
                 String id = UUID.randomUUID().toString().replace("-", "");
                 File file = new File(dir, id);
                 writeBytesToFile(proto.toByteArray(), file, true);
@@ -687,15 +706,19 @@ public class RTree3DTest {
         }
     }
 
-    private static com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry createProtoEntry(
-            Box bounds, Entry<Object, Point> entry) {
-        Position p = Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
-                .setLatitude(bounds.invX(entry.geometry().x()))
-                .setLongitude(bounds.invY(entry.geometry().y()))
-                .setTimeEpochMs(Math.round((double) bounds.invZ(entry.geometry().z()))).build();
+    private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry createProtoEntry(
+            Entry<T, S> entry, Func1<? super T, byte[]> serializer) {
+        // Position p =
+        // Position.newBuilder().setIdentifierType(1).setValueInteger(123456789)
+        // .setLatitude(entry.invX(point.geometry().x()))
+        // .setLongitude(entry.invY(point.geometry().y()))
+        // .setTimeEpochMs(Math.round((double)
+        // entry.invZ(point.geometry().z()))).build();
+
+        byte[] p = serializer.call(entry.value());
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry ent = com.github.davidmoten.rtree3d.proto.RTreeProtos.Entry
-                .newBuilder().setGeometry(createGeom(entry.geometry())).setObject(p.toByteString())
-                .build();
+                .newBuilder().setGeometry(createGeom(entry.geometry()))
+                .setObject(ByteString.copyFrom(p)).build();
         return ent;
     }
 

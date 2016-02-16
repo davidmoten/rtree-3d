@@ -217,6 +217,7 @@ public final class RTree<T, S extends Geometry> {
         private Splitter splitter = new SplitterQuadratic();
         private Selector selector = new SelectorMinimalVolumeIncrease();
         private boolean star = false;
+        private Optional<Box> bounds = Optional.absent();
 
         private Builder() {
         }
@@ -245,6 +246,11 @@ public final class RTree<T, S extends Geometry> {
          */
         public Builder maxChildren(int maxChildren) {
             this.maxChildren = of(maxChildren);
+            return this;
+        }
+
+        public Builder bounds(Box bounds) {
+            this.bounds = of(bounds);
             return this;
         }
 
@@ -304,7 +310,7 @@ public final class RTree<T, S extends Geometry> {
             if (!minChildren.isPresent())
                 minChildren = of((int) Math.round(maxChildren.get() * DEFAULT_FILLING_FACTOR));
             return new RTree<T, S>(
-                    new Context(minChildren.get(), maxChildren.get(), selector, splitter));
+                    new Context(minChildren.get(), maxChildren.get(), selector, splitter, bounds));
         }
 
     }
