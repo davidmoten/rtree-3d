@@ -517,7 +517,6 @@ public class RTree3DTest {
             // is leaf and has sub tree ids
             List<Entry<String, Box>> entries = new ArrayList<Entry<String, Box>>();
             for (SubTreeId id : node.getSubTreeIdsList()) {
-                // TODO fix cast
                 entries.add(Entry.entry(id.getId(), createBox(id.getMbb())));
             }
             return new Leaf<String, Box>(entries, box, context);
@@ -585,12 +584,6 @@ public class RTree3DTest {
         Tree t = Tree.newBuilder().setContext(createProtoContext(tree.context())).setRoot(top)
                 .build();
         writeBytesToFile(t.toByteArray(), new File(dir, "top"), true);
-    }
-
-    private static <T, S extends Geometry> void writeNodeAsSplitProtos(Node<T, S> node,
-            int maxDepth, File dir, Func1<? super T, byte[]> serializer) {
-        writeBytesToFile(createProtoNodeSplit(node, 0, maxDepth, dir, serializer).toByteArray(),
-                new File(dir, "top"), true);
     }
 
     private static void writeBytesToFile(byte[] bytes, File file, boolean zip) {
