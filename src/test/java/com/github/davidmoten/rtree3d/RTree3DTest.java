@@ -144,14 +144,8 @@ public class RTree3DTest {
                 for (File f : dir.listFiles())
                     f.delete();
                 System.out.println("writing protos for top max depth=" + maxDepth);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Box protoBounds = createProtoBox(
-                        bounds);
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Context protoContext = com.github.davidmoten.rtree3d.proto.RTreeProtos.Context
-                        .newBuilder().setBounds(protoBounds).setMinChildren(2).setMaxChildren(4)
-                        .build();
-                writeBytesToFile(protoContext.toByteArray(), new File(dir, "context"), false);
 
-                writeNodeAsSplitProtos(tree.root().get(), maxDepth, dir, serializer);
+                writeTreeAsSplitProtos(tree, maxDepth, dir, serializer);
 
                 System.out.println("reading from protos");
                 double sum = 0;
@@ -333,6 +327,46 @@ public class RTree3DTest {
         float lon2 = 30f;
         return Box.create(bounds.normX(lat1), bounds.normY(lon1), bounds.normZ(start),
                 bounds.normX(lat2), bounds.normY(lon2), bounds.normZ(finish));
+    }
+
+    private static <T, S extends Geometry> int depthWithMaxNodeCount(RTree<T, S> tree,
+            int maxNodeCount) {
+        Preconditions.checkArgument(maxNodeCount >= 0);
+        int maxDepth = tree.calculateDepth();
+        int depth = 0;
+        int count = 0;
+        while (true) {
+            count = nodeCountAtDepth(tree, depth);
+            if (count > maxNodeCount)
+                return Math.max(0, depth - 1);
+            else if (count == maxNodeCount)
+                return depth;
+            else
+                depth++;
+        }
+    }
+
+    private static <T, S extends Geometry> int nodeCountAtDepth(RTree<T, S> tree, int depth) {
+        if (tree.root().isPresent())
+            return nodeCountAtDepth(tree.root().get(), 0, depth);
+        else
+            return 0;
+    }
+
+    private static <T, S extends Geometry> int nodeCountAtDepth(Node<T, S> node, int depth,
+            int maxDepth) {
+        if (depth > maxDepth)
+            return 0;
+
+        if (node instanceof Leaf) {
+            return ((Leaf<T, S>) node).count() + 1;
+        } else {
+            int count = 1;
+            for (Node<T, S> child : ((NonLeaf<T, S>) node).children()) {
+                count += nodeCountAtDepth(child, depth + 1, maxDepth);
+            }
+            return count;
+        }
     }
 
     private void search(final File dir, boolean useFixes) {
@@ -547,6 +581,15 @@ public class RTree3DTest {
                 node.geometry().mbb());
         b.setMbb(box);
         return b.build();
+    }
+
+    private static <T, S extends Geometry> void writeTreeAsSplitProtos(RTree<T, S> tree,
+            int maxDepth, File dir, Func1<? super T, byte[]> serializer) {
+        com.github.davidmoten.rtree3d.proto.RTreeProtos.Node top = createProtoNodeSplit(
+                tree.root().get(), 0, maxDepth, dir, serializer);
+        Tree t = Tree.newBuilder().setContext(createProtoContext(tree.context())).setRoot(top)
+                .build();
+        writeBytesToFile(t.toByteArray(), new File(dir, "top"), true);
     }
 
     private static <T, S extends Geometry> void writeNodeAsSplitProtos(Node<T, S> node,
