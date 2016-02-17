@@ -8,6 +8,7 @@ option java_outer_classname = "RTreeProtos";
 message Tree {
     Context context = 1;
     Node root = 2;
+    bool hasLeaves = 3;
 }
 
 message Node {
