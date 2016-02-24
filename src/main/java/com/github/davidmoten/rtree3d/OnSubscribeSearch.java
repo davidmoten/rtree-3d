@@ -2,14 +2,15 @@ package com.github.davidmoten.rtree3d;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.github.davidmoten.rtree3d.geometry.Geometry;
+import com.github.davidmoten.rx.util.BackpressureUtils;
+import com.github.davidmoten.util.ImmutableStack;
+import com.google.common.annotations.VisibleForTesting;
+
 import rx.Observable.OnSubscribe;
 import rx.Producer;
 import rx.Subscriber;
 import rx.functions.Func1;
-
-import com.github.davidmoten.rtree3d.geometry.Geometry;
-import com.github.davidmoten.util.ImmutableStack;
-import com.google.common.annotations.VisibleForTesting;
 
 final class OnSubscribeSearch<T, S extends Geometry> implements OnSubscribe<Entry<T, S>> {
 
@@ -72,7 +73,7 @@ final class OnSubscribeSearch<T, S extends Geometry> implements OnSubscribe<Entr
 
             // rxjava used AtomicLongFieldUpdater instead of AtomicLong
             // but benchmarks showed no benefit here so reverted to AtomicLong
-            long previousCount = requested.getAndAdd(n);
+            long previousCount = BackpressureUtils.getAndAddRequest(requested, n);
             if (previousCount == 0) {
                 // don't touch stack every time during the loop because
                 // is a volatile and every write forces a thread memory
@@ -86,10 +87,13 @@ final class OnSubscribeSearch<T, S extends Geometry> implements OnSubscribe<Entr
                     if (st.isEmpty()) {
                         if (!subscriber.isUnsubscribed()) {
                             subscriber.onCompleted();
-                        } else
                             break;
-                    } else if (requested.addAndGet(-r) == 0)
+                        } else {
+                            break;
+                        }
+                    } else if (requested.addAndGet(-r) == 0) {
                         break;
+                    }
                 }
                 stack = st;
             }

@@ -1,7 +1,6 @@
 package com.github.davidmoten.rtree3d;
 
 import static com.github.davidmoten.rtree3d.Entry.entry;
-import static com.github.davidmoten.rtree3d.geometry.Geometries.point;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -20,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -32,8 +32,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observables.GroupedObservable;
 
 public class RTreeTest {
 
@@ -351,15 +354,16 @@ public class RTreeTest {
 
     @Test
     public void testBuilder2() {
-        RTree<Object, Point> tree = RTree.selector(new SelectorMinimalVolumeIncrease()).minChildren(1)
-                .maxChildren(4).splitter(new SplitterQuadratic()).create();
+        RTree<Object, Point> tree = RTree.selector(new SelectorMinimalVolumeIncrease())
+                .minChildren(1).maxChildren(4).splitter(new SplitterQuadratic()).create();
         testBuiltTree(tree);
     }
 
     @Test
     public void testBuilder3() {
-        RTree<Object, Point> tree = RTree.maxChildren(4).selector(new SelectorMinimalVolumeIncrease())
-                .minChildren(1).splitter(new SplitterQuadratic()).create();
+        RTree<Object, Point> tree = RTree.maxChildren(4)
+                .selector(new SelectorMinimalVolumeIncrease()).minChildren(1)
+                .splitter(new SplitterQuadratic()).create();
         testBuiltTree(tree);
     }
 
@@ -523,8 +527,8 @@ public class RTreeTest {
         tree.visualize(2000, 2000).save("target/greek.png");
 
         // do search
-        System.out.println("found="
-                + tree.search(Geometries.box(40, 27.0, 0, 40.5, 27.5, 1)).count().toBlocking().single());
+        System.out.println("found=" + tree.search(Geometries.box(40, 27.0, 0, 40.5, 27.5, 1))
+                .count().toBlocking().single());
 
         RTree<Object, Point> tree2 = RTree.maxChildren(maxChildren).star().<Object, Point> create()
                 .add(entries);
@@ -697,7 +701,7 @@ public class RTreeTest {
             assertEquals(res1.size(), res2.size());
         }
     }
-    
+
     private static Box box(double x1, double y1, double x2, double y2) {
         return Box.create(x1, y1, 0, x2, y2, 1);
     }
@@ -747,8 +751,6 @@ public class RTreeTest {
         assertFalse(completed.get());
     }
 
-    
-
     @Test
     public void calculateDepthOfEmptyTree() {
         RTree<Object, Geometry> tree = RTree.create();
@@ -785,11 +787,88 @@ public class RTreeTest {
                 .mbr();
         assertEquals(Geometries.box(1, 1, 0, 2, 2, 0), r.get());
     }
-    
-    private static Point point(double x, double y) {
-        return Point.create(x, y,0);
+
+    @Test(timeout = 30000000)
+    public void testGroupByIssue40() {
+        RTree<Integer, Geometry> tree = RTree.star().create();
+
+        tree = tree.add(1, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(2, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(3, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(4, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(5, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(6, Geometries.point(13.0, 52.0, 0));
+
+        Box box = Box.create(12.9, 51.9, 0, 13.1, 52.1, 0);
+        assertEquals(Integer.valueOf(2), tree.search(box).doOnRequest(new Action1<Long>() {
+            @Override
+            public void call(Long n) {
+                System.out.println("requestFromGroupBy=" + n);
+            }
+        }).groupBy(new Func1<Entry<Integer, Geometry>, Boolean>() {
+            @Override
+            public Boolean call(Entry<Integer, Geometry> entry) {
+                System.out.println(entry);
+                return entry.value() % 2 == 0;
+            }
+        }).doOnRequest(new Action1<Long>() {
+            @Override
+            public void call(Long n) {
+                System.out.println("requestFromFlatMap=" + n);
+            }
+        }).flatMap(
+                new Func1<GroupedObservable<Boolean, Entry<Integer, Geometry>>, Observable<Integer>>() {
+                    @Override
+                    public Observable<Integer> call(
+                            GroupedObservable<Boolean, Entry<Integer, Geometry>> group) {
+                        return group.count();
+                    }
+                }).count().toBlocking().single());
     }
 
+    @Test
+    public void testBackpressureForOverflow() {
+        RTree<Integer, Geometry> tree = RTree.star().create();
+
+        tree = tree.add(1, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(2, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(3, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(4, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(5, Geometries.point(13.0, 52.0, 0));
+        tree = tree.add(6, Geometries.point(13.0, 52.0, 0));
+        final AtomicInteger count = new AtomicInteger();
+        Box box = Box.create(12.9, 51.9, 0, 13.1, 52.1, 0);
+        tree.search(box).subscribe(new Subscriber<Object>() {
+
+            @Override
+            public void onStart() {
+                request(4);
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(Object t) {
+                request(Long.MAX_VALUE);
+                count.incrementAndGet();
+            }
+        });
+        assertEquals(6, count.get());
+        assertEquals(6, (int) tree.search(box).count().toBlocking().single());
+
+    }
+
+    private static Point point(double x, double y) {
+        return Point.create(x, y, 0);
+    }
 
     private static <T> Func1<Entry<T, ?>, T> toValue() {
         return new Func1<Entry<T, ?>, T>() {
