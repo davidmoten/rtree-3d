@@ -167,7 +167,7 @@
 		<dependency>
 			<groupId>au.gov.amsa.risky</groupId>
 			<artifactId>formats</artifactId>
-			<version>0.5.4-SNAPSHOT</version>
+			<version>0.5.9</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
