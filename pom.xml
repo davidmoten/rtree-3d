@@ -92,7 +92,13 @@
 		<dependency>
 			<groupId>io.reactivex</groupId>
 			<artifactId>rxjava</artifactId>
-			<version>1.1.0</version>
+			<version>1.1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.davidmoten</groupId>
+			<artifactId>rxjava-extras</artifactId>
+			<version>0.7</version>
 		</dependency>
 
 		<!-- Test Dependencies -->
@@ -116,12 +122,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>com.github.davidmoten</groupId>
-			<artifactId>rxjava-extras</artifactId>
-			<version>0.7</version>
-			<scope>test</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>com.github.davidmoten</groupId>

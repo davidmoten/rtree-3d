@@ -152,10 +152,10 @@ public class RTree3DTest {
                 long fileCount = 0;
                 for (File file : dir.listFiles()) {
                     if (file.getName().equals("top")) {
-                        RTree<Object, Geometry> tr = readTreeFromProto(file, tree.context());
+                        TreeAndType tt = readTreeFromProto(file);
                         System.out.println("querying");
                         Box searchBox = createSearchBox(useFixes, bounds);
-                        int c = tr.search(searchBox).count().toBlocking().single();
+                        int c = tt.tree.search(searchBox).count().toBlocking().single();
                         System.out.println("found " + c + " in " + searchBox);
                     } else {
                         fileCount += 1;
@@ -373,7 +373,14 @@ public class RTree3DTest {
         final RTree<String, Box> tree = readUpper(new File(dir, "top"));
         final Box searchBox = createSearchBox(useFixes, tree.context().bounds().get());
         long t = System.currentTimeMillis();
-        int found = tree.search(searchBox)
+        int found = search(tree, searchBox, scheduler, dir).count().toBlocking().single();
+        System.out.println(
+                "search found " + found + " in " + (System.currentTimeMillis() - t) + "ms");
+    }
+
+    private Observable<Entry<Object, Geometry>> search(final RTree<String, Box> tree,
+            final Box searchBox, final Scheduler scheduler, final File dir) {
+        return tree.search(searchBox)
                 .flatMap(new Func1<Entry<String, Box>, Observable<Entry<Object, Geometry>>>() {
                     @Override
                     public Observable<Entry<Object, Geometry>> call(
@@ -388,16 +395,17 @@ public class RTree3DTest {
                                 } catch (InterruptedException e) {
                                     throw new RuntimeException(e);
                                 }
-                                RTree<Object, Geometry> tr = readTreeFromProto(
-                                        new File(dir, filename), tree.context());
-                                return tr.search(searchBox);
+                                TreeAndType tt = readTreeFromProto(new File(dir, filename));
+                                if (tt.hasLeaves)
+                                    return tt.tree.search(searchBox);
+                                else {
+                                    return search((RTree<String, Box>) (RTree<?, ?>) tt.tree,
+                                            searchBox, scheduler, dir);
+                                }
                             }
                         }).subscribeOn(scheduler);
-
                     }
-                }).count().toBlocking().single();
-        System.out.println(
-                "search found " + found + " in " + (System.currentTimeMillis() - t) + "ms");
+                });
     }
 
     private static byte[] readBytes(File file) {
@@ -426,7 +434,7 @@ public class RTree3DTest {
                 tree.context());
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Node root = createProtoNode(
                 tree.root().get(), serializer);
-        return Tree.newBuilder().setContext(c).setRoot(root).build();
+        return Tree.newBuilder().setContext(c).setRoot(root).setHasLeaves(true).build();
     }
 
     private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Context createProtoContext(
@@ -444,9 +452,7 @@ public class RTree3DTest {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree tree = com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree
                     .parseFrom(is);
-            final Context ctx = new Context(tree.getContext().getMinChildren(),
-                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar(),
-                    Optional.of(createBox(tree.getContext().getBounds())));
+            final Context ctx = createContext(tree.getContext());
             Node<String, Box> node = toUpperNode(tree.getRoot(), ctx);
             return RTree.create(node, ctx);
         } catch (IOException e) {
@@ -461,6 +467,12 @@ public class RTree3DTest {
         }
     }
 
+    private static Context createContext(
+            com.github.davidmoten.rtree3d.proto.RTreeProtos.Context c) {
+        return new Context(c.getMinChildren(), c.getMaxChildren(), new SelectorRStar(),
+                new SplitterRStar(), Optional.of(createBox(c.getBounds())));
+    }
+
     private static <T, S extends Geometry> RTree<T, S> readLower(File file,
             Func1<byte[], T> deserializer) {
         InputStream is = null;
@@ -468,8 +480,7 @@ public class RTree3DTest {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
             com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree tree = com.github.davidmoten.rtree3d.proto.RTreeProtos.Tree
                     .parseFrom(is);
-            final Context ctx = new Context(tree.getContext().getMinChildren(),
-                    tree.getContext().getMaxChildren(), new SelectorRStar(), new SplitterRStar());
+            final Context ctx = createContext(tree.getContext());
             Node<T, S> node = toLowerNode(tree.getRoot(), ctx, deserializer);
             return RTree.create(node, ctx);
         } catch (IOException e) {
@@ -531,15 +542,26 @@ public class RTree3DTest {
         }
     }
 
-    private static RTree<Object, Geometry> readTreeFromProto(File file, Context context) {
+    private static class TreeAndType {
+        final RTree<Object, Geometry> tree;
+        final boolean hasLeaves;
+
+        TreeAndType(RTree<Object, Geometry> tree, boolean hasLeaves) {
+            this.tree = tree;
+            this.hasLeaves = hasLeaves;
+        }
+
+    }
+
+    private static TreeAndType readTreeFromProto(File file) {
         InputStream is = null;
         try {
             is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
-            com.github.davidmoten.rtree3d.proto.RTreeProtos.Node node = com.github.davidmoten.rtree3d.proto.RTreeProtos.Node
-                    .parseFrom(is);
-            Node<Object, Geometry> root = toNode(node, context);
-            RTree<Object, Geometry> tree = RTree.create(root, context);
-            return tree;
+            Tree tree = Tree.parseFrom(is);
+            Context context = createContext(tree.getContext());
+            Node<Object, Geometry> root = toNode(tree.getRoot(), context);
+            RTree<Object, Geometry> tr = RTree.create(root, context);
+            return new TreeAndType(tr, tree.getHasLeaves());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -580,10 +602,17 @@ public class RTree3DTest {
     private static <T, S extends Geometry> void writeTreeAsSplitProtos(RTree<T, S> tree,
             int maxDepth, File dir, Func1<? super T, byte[]> serializer) {
         com.github.davidmoten.rtree3d.proto.RTreeProtos.Node top = createProtoNodeSplit(
-                tree.root().get(), 0, maxDepth, dir, serializer);
+                tree.root().get(), 0, maxDepth, dir, serializer, tree.context());
         Tree t = Tree.newBuilder().setContext(createProtoContext(tree.context())).setRoot(top)
-                .build();
+                .setHasLeaves(false).build();
         writeBytesToFile(t.toByteArray(), new File(dir, "top"), true);
+    }
+
+    private static <T, S extends Geometry> void writeNodeAsSplitProtos(Node<T, S> node,
+            int maxDepth, File dir, Func1<? super T, byte[]> serializer, Context context) {
+        writeBytesToFile(
+                createProtoNodeSplit(node, 0, maxDepth, dir, serializer, context).toByteArray(),
+                new File(dir, "top"), true);
     }
 
     private static void writeBytesToFile(byte[] bytes, File file, boolean zip) {
@@ -607,8 +636,8 @@ public class RTree3DTest {
     }
 
     private static <T, S extends Geometry> com.github.davidmoten.rtree3d.proto.RTreeProtos.Node createProtoNodeSplit(
-            Node<T, S> node, int depth, int maxDepth, File dir,
-            Func1<? super T, byte[]> serializer) {
+            Node<T, S> node, int depth, int maxDepth, File dir, Func1<? super T, byte[]> serializer,
+            Context context) {
         Builder b = RTreeProtos.Node.newBuilder();
         if (depth <= maxDepth && node instanceof Leaf) {
             for (Entry<T, S> entry : ((Leaf<T, S>) node).entries()) {
@@ -618,17 +647,20 @@ public class RTree3DTest {
             // is NonLeaf
             NonLeaf<T, S> n = (NonLeaf<T, S>) node;
             for (Node<T, S> child : n.children()) {
-                b.addChildren(createProtoNodeSplit(child, depth + 1, maxDepth, dir, serializer));
+                b.addChildren(
+                        createProtoNodeSplit(child, depth + 1, maxDepth, dir, serializer, context));
             }
         } else if (depth == maxDepth && node instanceof NonLeaf) {
             // is NonLeaf
             NonLeaf<T, S> n = (NonLeaf<T, S>) node;
             for (Node<T, S> child : n.children()) {
-                com.github.davidmoten.rtree3d.proto.RTreeProtos.Node proto = createProtoNode(child,
-                        serializer);
+                com.github.davidmoten.rtree3d.proto.RTreeProtos.Node protoNode = createProtoNode(
+                        child, serializer);
                 String id = UUID.randomUUID().toString().replace("-", "");
                 File file = new File(dir, id);
-                writeBytesToFile(proto.toByteArray(), file, true);
+                Tree tree = Tree.newBuilder().setRoot(protoNode).setHasLeaves(false)
+                        .setContext(createProtoContext(context)).build();
+                writeBytesToFile(tree.toByteArray(), file, true);
                 b.addSubTreeIds(SubTreeId.newBuilder().setId(id)
                         .setMbb(createProtoBox(child.geometry().mbb())));
             }
