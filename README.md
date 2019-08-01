@@ -2,6 +2,8 @@
 [![Travis CI](https://travis-ci.org/davidmoten/rtree-3d.svg)](https://travis-ci.org/davidmoten/rtree-3d)<br/>
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rtree-3d/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rtree-3d)<br/>
 
+**Note**: this project is NOT under active development. See [rtree-multi](https://github.com/davidmoten/rtree-multi) for an n-dimensional R-Tree.
+
 Three dimensional R-Tree in java.
 * motivated by spatio-temporal queries
 * nodes can be serialized to disk or network storage.  
